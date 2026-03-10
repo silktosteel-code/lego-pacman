@@ -1,1612 +1,740 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Lego Space Pac-Man</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        body {
-            background: #000011;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            font-family: 'Press Start 2P', monospace;
-            overflow: hidden;
-        }
-
-        #gameContainer {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-height: 100vh;
-            overflow: hidden;
-        }
-
-        #hud {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 560px;
-            padding: 8px 20px;
-            color: #FFD700;
-            font-size: 12px;
-            text-shadow: 0 0 10px #FFD700;
-            box-sizing: border-box;
-        }
-
-        #hud > div {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        #lives {
-            display: flex;
-            gap: 5px;
-        }
-
-        .life-icon {
-            width: 20px;
-            height: 20px;
-            background: #FFD700;
-            border-radius: 50%;
-            border: 2px solid #FFA500;
-        }
-
-        #gameCanvas {
-            border: 4px solid #003366;
-            border-radius: 8px;
-            box-shadow: 0 0 30px rgba(0, 51, 102, 0.5), inset 0 0 50px rgba(0, 0, 0, 0.3);
-        }
-
-        #dpad {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150px;
-            height: 150px;
-        }
-
-        .dpad-btn {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 51, 102, 0.8);
-            border: 3px solid #FFD700;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: #FFD700;
-            cursor: pointer;
-            transition: all 0.1s;
-        }
-
-        .dpad-btn:active {
-            background: #FFD700;
-            color: #003366;
-            transform: scale(0.95);
-        }
-
-        #dpad-up { top: 0; left: 50px; }
-        #dpad-down { bottom: 0; left: 50px; }
-        #dpad-left { top: 50px; left: 0; }
-        #dpad-right { top: 50px; right: 0; }
-
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 17, 0.9);
-            color: #FFD700;
-            text-align: center;
-            z-index: 10;
-        }
-
-        #overlay h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 20px #FFD700;
-            animation: pulse 1.5s infinite;
-        }
-
-        #overlay p {
-            font-size: 12px;
-            margin: 10px 0;
-            color: #87CEEB;
-        }
-
-        #overlay .blink {
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .hidden { display: none !important; }
-
-        #startShip {
-            width: 120px;
-            height: 80px;
-            margin: 20px 0;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>LEGO Space Arcade</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0a0a2e;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;color:#ffd700}
+canvas{display:block;background:#111133;border:3px solid #334;border-radius:4px;image-rendering:pixelated;touch-action:none}
+#app{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%}
+#hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:600px;padding:8px 16px;font-size:18px;font-weight:bold;text-shadow:0 0 8px rgba(255,215,0,0.6);letter-spacing:1px;user-select:none}
+#hud .lives{color:#ff4444}
+#menu{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,46,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;text-align:center}
+#menu.hidden{display:none}
+#menu h1{font-size:34px;margin-bottom:6px;text-shadow:0 0 20px rgba(255,215,0,0.8)}
+#menu .sub{font-size:13px;color:#88aaff;margin-bottom:28px}
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:420px;width:90%;margin-bottom:20px}
+.game-card{background:linear-gradient(135deg,#1a2a6a,#0d1840);border:2px solid #2255cc;border-radius:12px;padding:18px 14px;cursor:pointer;transition:transform 0.15s,border-color 0.15s;text-align:center}
+.game-card:hover{transform:translateY(-3px);border-color:#ffd700}
+.game-card .icon{font-size:36px;margin-bottom:6px}
+.game-card .name{font-size:16px;font-weight:bold;color:#ffd700}
+.game-card .desc{font-size:11px;color:#99aabb;margin-top:4px}
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,46,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:900;text-align:center}
+#overlay.hidden{display:none}
+#overlay .msg{font-size:26px;margin-bottom:10px}
+#overlay .msg.win{color:#44ff44;text-shadow:0 0 15px rgba(0,255,0,0.5)}
+#overlay .msg.lose{color:#ff4444;text-shadow:0 0 15px rgba(255,0,0,0.5)}
+.btn{padding:12px 32px;font-size:18px;font-weight:bold;background:linear-gradient(180deg,#ffd700,#e6a800);border:none;border-radius:8px;color:#1a1a4e;cursor:pointer;box-shadow:0 4px 0 #b8860b,0 0 15px rgba(255,215,0,0.3);letter-spacing:1px;margin:6px}
+.btn:hover{background:linear-gradient(180deg,#ffe44d,#ffd700)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b8860b}
+.btn.sm{padding:8px 20px;font-size:14px}
+#mobile-controls{display:none;position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:170px;height:170px;z-index:50}
+#mobile-controls button{position:absolute;width:52px;height:52px;background:rgba(255,215,0,0.12);border:2px solid rgba(255,215,0,0.35);border-radius:12px;color:#ffd700;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#mobile-controls button:active{background:rgba(255,215,0,0.3)}
+#btn-up{top:0;left:50%;transform:translateX(-50%)}
+#btn-down{bottom:0;left:50%;transform:translateX(-50%)}
+#btn-left{top:50%;left:0;transform:translateY(-50%)}
+#btn-right{top:50%;right:0;transform:translateY(-50%)}
+@media(pointer:coarse){#mobile-controls{display:block}}
+@media(max-width:500px){#menu h1{font-size:24px}.game-grid{gap:10px}.game-card{padding:14px 10px}#hud{font-size:14px;padding:4px 10px}}
+</style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="hud">
-            <div>
-                <span>SCORE:</span>
-                <span id="score">0</span>
-            </div>
-            <div>
-                <span>LEVEL:</span>
-                <span id="level">1</span>
-            </div>
-            <div>
-                <span>HIGH:</span>
-                <span id="highScore">0</span>
-            </div>
-            <div id="lives"></div>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-        <div id="overlay">
-            <h1>LEGO SPACE<br>PAC-MAN</h1>
-            <canvas id="startShip" width="120" height="80"></canvas>
-            <p>Classic Arcade Action in the Lego Galaxy!</p>
-            <p class="blink">PRESS SPACE OR TAP TO START</p>
-            <p style="font-size: 10px; margin-top: 30px;">Arrow Keys / WASD / Swipe to Move</p>
-        </div>
+<div id="app">
+  <div id="hud" class="hidden">
+    <span id="hud-left"></span>
+    <span id="hud-center"></span>
+    <span id="hud-right"></span>
+  </div>
+  <canvas id="canvas" width="504" height="552"></canvas>
+  <div id="mobile-controls">
+    <button id="btn-up" type="button">&#9650;</button>
+    <button id="btn-down" type="button">&#9660;</button>
+    <button id="btn-left" type="button">&#9664;</button>
+    <button id="btn-right" type="button">&#9654;</button>
+  </div>
+</div>
+
+<div id="menu">
+  <h1>&#128640; LEGO SPACE ARCADE</h1>
+  <div class="sub">Classic Space Theme</div>
+  <div class="game-grid">
+    <div class="game-card" data-game="pacman">
+      <div class="icon">&#127854;</div>
+      <div class="name">PAC-MAN</div>
+      <div class="desc">Eat all the studs!</div>
     </div>
-    <div id="dpad">
-        <div class="dpad-btn" id="dpad-up">▲</div>
-        <div class="dpad-btn" id="dpad-down">▼</div>
-        <div class="dpad-btn" id="dpad-left">◀</div>
-        <div class="dpad-btn" id="dpad-right">▶</div>
+    <div class="game-card" data-game="snake">
+      <div class="icon">&#128013;</div>
+      <div class="name">SNAKE</div>
+      <div class="desc">Grow the space worm!</div>
     </div>
+    <div class="game-card" data-game="breakout">
+      <div class="icon">&#129513;</div>
+      <div class="name">BREAKOUT</div>
+      <div class="desc">Smash the bricks!</div>
+    </div>
+    <div class="game-card" data-game="invaders">
+      <div class="icon">&#128126;</div>
+      <div class="name">INVADERS</div>
+      <div class="desc">Defend the station!</div>
+    </div>
+  </div>
+</div>
 
-    <script>
-    // ============================================
-    // LEGO SPACE PAC-MAN - Complete Game
-    // ============================================
+<div id="overlay" class="hidden">
+  <div id="ol-msg" class="msg"></div>
+  <div id="ol-score" style="font-size:18px;color:#ccc;margin-bottom:16px"></div>
+  <button class="btn" id="ol-retry">RETRY</button>
+  <button class="btn sm" id="ol-menu" style="background:linear-gradient(180deg,#667,#445);color:#ddd;box-shadow:0 3px 0 #333">BACK TO MENU</button>
+</div>
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const overlay = document.getElementById('overlay');
-    const dpad = document.getElementById('dpad');
-    const scoreEl = document.getElementById('score');
-    const levelEl = document.getElementById('level');
-    const highScoreEl = document.getElementById('highScore');
-    const livesEl = document.getElementById('lives');
+<script>
+(function(){
+'use strict';
 
-    // Game constants
-    const TILE_SIZE = 20;
-    const MAZE_WIDTH = 28;
-    const MAZE_HEIGHT = 31;
+// ════════════════════════════════════════════════════════
+//  SHARED
+// ════════════════════════════════════════════════════════
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var menuEl = document.getElementById('menu');
+var overlayEl = document.getElementById('overlay');
+var hudEl = document.getElementById('hud');
+var olMsg = document.getElementById('ol-msg');
+var olScore = document.getElementById('ol-score');
+var hudLeft = document.getElementById('hud-left');
+var hudCenter = document.getElementById('hud-center');
+var hudRight = document.getElementById('hud-right');
 
-    // Colors - Lego Space palette
-    const COLORS = {
-        spaceBlue: '#003366',
-        spaceLightBlue: '#0066CC',
-        spaceDarkGrey: '#4A4A4A',
-        spaceLightGrey: '#8A8A8A',
-        yellow: '#FFD700',
-        white: '#FFFFFF',
-        black: '#000011',
-        ghostRed: '#FF0000',
-        ghostPink: '#FFB8FF',
-        ghostCyan: '#00FFFF',
-        ghostOrange: '#FFB852',
-        vulnerable: '#2121FF',
-        vulnerableWhite: '#DDDDDD'
-    };
+var currentGame = null;
+var keys = {};
+var touchDir = -1;
 
-    // Classic Pac-Man maze (0=empty, 1=wall, 2=dot, 3=power pellet, 4=ghost house, 5=tunnel)
-    const MAZE_TEMPLATE = [
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
-        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-        [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
-        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-        [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
-        [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
-        [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
-        [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
-        [0,0,0,0,0,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,0,0,0,0,0],
-        [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
-        [0,0,0,0,0,1,2,1,1,0,1,1,1,4,4,1,1,1,0,1,1,2,1,0,0,0,0,0],
-        [1,1,1,1,1,1,2,1,1,0,1,4,4,4,4,4,4,1,0,1,1,2,1,1,1,1,1,1],
-        [5,0,0,0,0,0,2,0,0,0,1,4,4,4,4,4,4,1,0,0,0,2,0,0,0,0,0,5],
-        [1,1,1,1,1,1,2,1,1,0,1,4,4,4,4,4,4,1,0,1,1,2,1,1,1,1,1,1],
-        [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
-        [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
-        [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
-        [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
-        [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
-        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-        [1,3,2,2,1,1,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,1,1,2,2,3,1],
-        [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
-        [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
-        [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
-        [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
-        [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
-        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-    ];
+// Audio
+var audioCtx = null;
+function initAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function tone(freq,dur,type,vol){
+  if(!audioCtx||!freq) return;
+  var o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type||'square'; o.frequency.value=freq;
+  g.gain.setValueAtTime(vol||0.06,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+dur);
+}
 
-    // Game state
-    let gameState = 'start'; // start, playing, paused, gameover, levelcomplete
-    let score = 0;
-    let highScore = parseInt(localStorage.getItem('legoSpacePacmanHighScore')) || 0;
-    let lives = 3;
-    let level = 1;
-    let maze = [];
-    let dotsRemaining = 0;
-    let ghostEatChain = 0;
-    let powerMode = false;
-    let powerModeTimer = 0;
-    let fruitVisible = false;
-    let fruitTimer = 0;
-    let fruitEaten = 0;
-    let gameSpeed = 1;
-    let lastTime = 0;
-    let animFrame = 0;
-    let stars = [];
+// BGM
+var bgmInt=null,bgmStep=0;
+var bgmBass=[65,65,82,82,73,73,87,87,65,65,82,82,98,87,82,73];
+var bgmMel=[262,0,330,0,392,0,330,0,349,0,330,0,294,0,262,0,262,0,392,0,523,0,392,0,440,0,392,0,349,0,330,262];
+var bgmArp=[196,247,294,247,196,247,294,247,175,220,262,220,175,220,262,220,196,247,294,247,196,247,294,247,185,220,277,220,185,220,277,220];
+function startBgm(){
+  if(bgmInt) return; bgmStep=0;
+  bgmInt=setInterval(function(){
+    if(!audioCtx) return;
+    tone(bgmBass[bgmStep%bgmBass.length],0.16,'triangle',0.03);
+    if(bgmStep%2===0) tone(bgmMel[bgmStep%bgmMel.length],0.12,'square',0.02);
+    tone(bgmArp[bgmStep%bgmArp.length],0.07,'sine',0.015);
+    bgmStep++;
+  },180);
+}
+function stopBgm(){if(bgmInt){clearInterval(bgmInt);bgmInt=null;}}
 
-    // Audio context
-    let audioCtx = null;
+// Resize
+function resize(){
+  var cw=window.innerWidth-16;
+  var mh=window.matchMedia('(pointer:coarse)').matches?190:0;
+  var ch=window.innerHeight-50-mh-16;
+  var s=Math.min(cw/canvas.width,ch/canvas.height,3);
+  canvas.style.width=Math.floor(canvas.width*s)+'px';
+  canvas.style.height=Math.floor(canvas.height*s)+'px';
+}
+window.addEventListener('resize',resize);
 
-    // Entities
-    let pacman = null;
-    let ghosts = [];
+// Input
+document.addEventListener('keydown',function(e){
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].indexOf(e.key)!==-1) e.preventDefault();
+  if(currentGame&&currentGame.onkey) currentGame.onkey(e.key,true);
+});
+document.addEventListener('keyup',function(e){keys[e.key]=false;});
 
-    // Touch handling
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let isTouchDevice = false;
+['btn-up','btn-down','btn-left','btn-right'].forEach(function(id,i){
+  var dirs=[3,1,2,0];
+  var el=document.getElementById(id);
+  function h(e){e.preventDefault();touchDir=dirs[i];if(currentGame&&currentGame.ondir)currentGame.ondir(dirs[i]);}
+  el.addEventListener('mousedown',h);el.addEventListener('touchstart',h);
+});
+var tx=0,ty=0;
+canvas.addEventListener('touchstart',function(e){e.preventDefault();tx=e.touches[0].clientX;ty=e.touches[0].clientY;});
+canvas.addEventListener('touchend',function(e){
+  e.preventDefault();
+  var dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<10) {if(currentGame&&currentGame.ontap)currentGame.ontap();return;}
+  var d=Math.abs(dx)>Math.abs(dy)?(dx>0?0:2):(dy>0?1:3);
+  if(currentGame&&currentGame.ondir)currentGame.ondir(d);
+});
 
-    // Fruit types (Lego Space themed)
-    const FRUIT_TYPES = ['rocket', 'moon', 'planet', 'ufo', 'astronaut'];
-    const FRUIT_POINTS = [100, 300, 500, 700, 1000];
+// Menu
+document.querySelectorAll('.game-card').forEach(function(card){
+  card.addEventListener('click',function(){
+    initAudio();
+    var g=card.getAttribute('data-game');
+    launchGame(g);
+  });
+});
+document.getElementById('ol-retry').addEventListener('click',function(){
+  overlayEl.classList.add('hidden');
+  if(currentGame) currentGame.start();
+  startBgm();
+});
+document.getElementById('ol-menu').addEventListener('click',function(){
+  overlayEl.classList.add('hidden');
+  stopBgm();
+  currentGame=null;
+  menuEl.classList.remove('hidden');
+  hudEl.classList.add('hidden');
+});
 
-    // ============================================
-    // AUDIO SYSTEM
-    // ============================================
+function showResult(msg,isWin,score){
+  stopBgm();
+  olMsg.textContent=msg;
+  olMsg.className='msg '+(isWin?'win':'lose');
+  olScore.textContent=score?('Score: '+score):'';
+  overlayEl.classList.remove('hidden');
+  if(isWin) for(var i=0;i<6;i++)(function(i){setTimeout(function(){tone([262,330,392,523,659,784][i],0.2,'square',0.07)},i*90)})(i);
+  else for(var i=0;i<5;i++)(function(i){setTimeout(function(){tone(400-i*50,0.15,'sawtooth',0.08)},i*100)})(i);
+}
 
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function launchGame(name){
+  menuEl.classList.add('hidden');
+  hudEl.classList.remove('hidden');
+  if(name==='pacman') currentGame=PacMan;
+  else if(name==='snake') currentGame=Snake;
+  else if(name==='breakout') currentGame=Breakout;
+  else if(name==='invaders') currentGame=Invaders;
+  if(currentGame){currentGame.start();startBgm();}
+}
+
+// LEGO drawing helpers
+function drawStud(x,y,r,col,hiCol){
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();
+  ctx.fillStyle=hiCol||'rgba(255,255,255,0.15)';
+  ctx.beginPath();ctx.arc(x-r*0.2,y-r*0.3,r*0.35,0,6.28);ctx.fill();
+}
+function drawBrick(x,y,w,h,col,edge){
+  ctx.fillStyle=col;ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle=edge||'rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+  drawStud(x+w/2,y+h/2,Math.min(w,h)*0.18,col==='#1a3a8a'?'#3366dd':col);
+}
+
+// Main loop
+var rafId=null,lastT=0;
+function mainLoop(t){
+  rafId=requestAnimationFrame(mainLoop);
+  if(lastT===0){lastT=t;return;}
+  var dt=Math.min(t-lastT,100)/1000;
+  lastT=t;
+  if(currentGame&&currentGame.update) currentGame.update(dt);
+  if(currentGame&&currentGame.draw) currentGame.draw();
+}
+rafId=requestAnimationFrame(mainLoop);
+
+// ════════════════════════════════════════════════════════
+//  PAC-MAN
+// ════════════════════════════════════════════════════════
+var PacMan=(function(){
+  var CELL=24,COLS=21,ROWS=23,W=COLS*CELL,H=ROWS*CELL;
+  var MAP=[
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,2,1,1,1,2,1,1,1,2,1,1,1,2,1,1,2,1],
+    [1,3,1,1,2,1,1,1,2,1,1,1,2,1,1,1,2,1,1,3,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,2,1,2,1,1,1,1,1,1,1,2,1,2,1,1,2,1],
+    [1,2,2,2,2,1,2,2,2,2,1,2,2,2,2,1,2,2,2,2,1],
+    [1,1,1,1,2,1,1,1,0,1,1,1,0,1,1,1,2,1,1,1,1],
+    [4,4,4,1,2,1,0,0,0,0,0,0,0,0,0,1,2,1,4,4,4],
+    [1,1,1,1,2,1,0,1,1,5,5,5,1,1,0,1,2,1,1,1,1],
+    [0,0,0,0,2,0,0,1,0,0,0,0,0,1,0,0,2,0,0,0,0],
+    [1,1,1,1,2,1,0,1,0,0,0,0,0,1,0,1,2,1,1,1,1],
+    [4,4,4,1,2,1,0,1,1,1,1,1,1,1,0,1,2,1,4,4,4],
+    [1,1,1,1,2,1,0,0,0,0,0,0,0,0,0,1,2,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,2,1,1,1,2,1,1,1,2,1,1,1,2,1,1,2,1],
+    [1,3,2,1,2,2,2,2,2,2,0,2,2,2,2,2,2,1,2,3,1],
+    [1,1,2,1,2,1,2,1,1,1,1,1,1,1,2,1,2,1,2,1,1],
+    [1,2,2,2,2,1,2,2,2,2,1,2,2,2,2,1,2,2,2,2,1],
+    [1,2,1,1,1,1,1,1,2,1,1,1,2,1,1,1,1,1,1,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4],
+  ];
+  var DR=[0,1,0,-1],DC=[1,0,-1,0];
+  var GCOLS=['#ff2222','#ff88cc','#44ddff','#ffaa00'];
+  var map,score,lives,level,state,totalD,eaten;
+  var pl,gh,fTimer,mTimer,mPhase;
+  var PSPS=0.1;
+  var stars=[];
+  var accum=0,STEP=1/60;
+
+  function cloneM(){return MAP.map(function(r){return r.slice()});}
+  function cntD(m){var n=0;for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(m[r][c]===2||m[r][c]===3)n++;return n;}
+  function ok(r,c,g){if(c<0||c>=COLS)return r===10;if(r<0||r>=ROWS)return false;var t=map[r][c];if(t===1)return false;if(t===5)return!!g;return true;}
+
+  function mkP(){return{r:16,c:10,pr:16,pc:10,dir:0,nd:0,mv:false,mo:0,md:1,pg:0};}
+  function mkG(i){return{r:10,c:9+i,pr:10,pc:9+i,dir:3,color:GCOLS[i],mode:'scatter',pg:0,
+    speed:Math.min(0.07+i*0.005+((level||1)-1)*0.01,0.13),delay:i*120,inH:true,idx:i};}
+
+  function initS(){stars=[];for(var i=0;i<40;i++){stars.push({x:Math.random()*W,y:(ROWS-1)*CELL+Math.random()*CELL,s:Math.random()*1.5+0.5,b:Math.random()*6.28});if(i<15){stars.push({x:Math.random()*CELL*3,y:8*CELL+Math.random()*CELL*5,s:Math.random()+0.4,b:Math.random()*6.28});stars.push({x:W-Math.random()*CELL*3,y:8*CELL+Math.random()*CELL*5,s:Math.random()+0.4,b:Math.random()*6.28});}}}
+
+  function gTarget(g){
+    if(g.mode==='frightened')return{r:Math.random()*ROWS|0,c:Math.random()*COLS|0};
+    if(g.mode==='eaten')return{r:10,c:10};
+    if(g.mode==='scatter'){var co=[{r:0,c:20},{r:22,c:20},{r:22,c:0},{r:0,c:0}];return co[g.idx];}
+    if(g.idx===0)return{r:pl.r,c:pl.c};
+    if(g.idx===1)return{r:pl.r+DR[pl.dir]*4,c:pl.c+DC[pl.dir]*4};
+    if(g.idx===2)return{r:pl.r+DR[pl.dir]*2,c:pl.c+DC[pl.dir]*2};
+    var d=Math.abs(g.r-pl.r)+Math.abs(g.c-pl.c);return d>8?{r:pl.r,c:pl.c}:{r:22,c:0};
+  }
+
+  function moveG(g){
+    if(g.inH){g.delay--;if(g.delay<=0){g.inH=false;g.r=8;g.c=10;g.pr=8;g.pc=10;g.pg=1;}return;}
+    var spd=g.mode==='eaten'?0.18:(g.mode==='frightened'?0.05:g.speed);
+    g.pg+=spd;
+    if(g.pg>=1){
+      g.pg=0;g.pr=g.r;g.pc=g.c;
+      if(g.c<0){g.c=COLS-1;g.pc=COLS-1;}if(g.c>=COLS){g.c=0;g.pc=0;}
+      if(g.mode==='eaten'&&g.r===10&&Math.abs(g.c-10)<=1)g.mode='chase';
+      var tgt=gTarget(g),opp=(g.dir+2)%4,bd=-1,bds=1e9;
+      for(var d=0;d<4;d++){if(d===opp)continue;var nr=g.r+DR[d],nc=g.c+DC[d];if(!ok(nr,nc,true))continue;var ds=(nr-tgt.r)*(nr-tgt.r)+(nc-tgt.c)*(nc-tgt.c);if(ds<bds){bds=ds;bd=d;}}
+      if(bd===-1){var nr2=g.r+DR[opp],nc2=g.c+DC[opp];if(ok(nr2,nc2,true))bd=opp;else for(var d2=0;d2<4;d2++){var nr3=g.r+DR[d2],nc3=g.c+DC[d2];if(ok(nr3,nc3,true)){bd=d2;break;}}}
+      if(bd!==-1){g.dir=bd;var nr4=g.r+DR[g.dir],nc4=g.c+DC[g.dir];if(ok(nr4,nc4,true)){g.r=nr4;g.c=nc4;}}
+    }
+  }
+
+  function moveP(){
+    pl.pg+=PSPS;
+    if(pl.pg>=1){
+      pl.pg=0;pl.pr=pl.r;pl.pc=pl.c;
+      if(pl.c<0){pl.c=COLS-1;pl.pc=COLS-1;}if(pl.c>=COLS){pl.c=0;pl.pc=0;}
+      var tr=pl.r+DR[pl.nd],tc=pl.c+DC[pl.nd];if(ok(tr,tc,false))pl.dir=pl.nd;
+      var nr=pl.r+DR[pl.dir],nc=pl.c+DC[pl.dir];
+      if(ok(nr,nc,false)){pl.r=nr;pl.c=nc;pl.mv=true;}else pl.mv=false;
+      if(pl.c>=0&&pl.c<COLS){
+        var cell=map[pl.r][pl.c];
+        if(cell===2){map[pl.r][pl.c]=0;score+=10;eaten++;tone(200+Math.random()*100,0.07,'square',0.05);}
+        else if(cell===3){map[pl.r][pl.c]=0;score+=50;eaten++;fTimer=420;
+          for(var i=0;i<gh.length;i++)if(gh[i].mode!=='eaten')gh[i].mode='frightened';
+          tone(180,0.15,'sawtooth',0.08);setTimeout(function(){tone(280,0.15,'sawtooth',0.08)},80);setTimeout(function(){tone(400,0.2,'sawtooth',0.08)},160);
         }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
+      }
+      if(eaten>=totalD){state='win';showResult('LEVEL '+level+' COMPLETE!',true,score);}
+    }
+  }
+
+  function chkCol(){
+    for(var i=0;i<gh.length;i++){var g=gh[i];if(g.inH)continue;
+      if(g.r===pl.r&&g.c===pl.c){
+        if(g.mode==='frightened'){g.mode='eaten';score+=200;tone(300,0.08,'square',0.08);setTimeout(function(){tone(800,0.12,'square',0.08)},80);}
+        else if(g.mode!=='eaten'){pDie();return;}
+      }
+    }
+  }
+
+  function pDie(){
+    lives--;
+    for(var i=0;i<5;i++)(function(i){setTimeout(function(){tone(400-i*50,0.12,'sawtooth',0.08)},i*100)})(i);
+    if(lives<=0){state='over';showResult('GAME OVER',false,score);}
+    else{state='dead';setTimeout(function(){if(state==='dead'){pl=mkP();gh=[0,1,2,3].map(mkG);state='play';}},1000);}
+  }
+
+  var MT=[420,1200,420,1200,300,1200,300];
+  function updModes(){
+    if(fTimer>0){fTimer--;if(fTimer<=0)for(var i=0;i<gh.length;i++)if(gh[i].mode==='frightened')gh[i].mode=mPhase%2===0?'scatter':'chase';return;}
+    mTimer++;if(mPhase<MT.length&&mTimer>=MT[mPhase]){mTimer=0;mPhase++;var m=mPhase%2===0?'scatter':'chase';for(var i=0;i<gh.length;i++)if(gh[i].mode!=='frightened'&&gh[i].mode!=='eaten')gh[i].mode=m;}
+  }
+
+  function drawMap(){
+    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+      var x=c*CELL,y=r*CELL,t=map[r][c];
+      if(t===1){drawBrick(x,y,CELL,CELL,'#1a3a8a','#2255cc');}
+      else if(t===4){ctx.fillStyle='#060618';ctx.fillRect(x,y,CELL,CELL);}
+      else if(t===5){ctx.fillStyle='#0d0d30';ctx.fillRect(x,y,CELL,CELL);ctx.fillStyle='#ff66aa';ctx.fillRect(x,y+CELL/2-2,CELL,4);}
+      else{ctx.fillStyle='#0d0d30';ctx.fillRect(x,y,CELL,CELL);
+        if(t===2){ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(x+CELL/2,y+CELL/2,3,0,6.28);ctx.fill();}
+        else if(t===3){var p=Math.sin(Date.now()*0.006)*0.3+0.7;ctx.globalAlpha=p;ctx.fillStyle='#ff3333';ctx.fillRect(x+CELL/2-4,y+CELL/2-4,8,8);ctx.globalAlpha=1;}
+      }
+    }
+    var now=Date.now()*0.001;for(var i=0;i<stars.length;i++){var s=stars[i];ctx.fillStyle='rgba(200,220,255,'+(0.3+0.7*Math.sin(now*2+s.b))+')';ctx.fillRect(s.x,s.y,s.s,s.s);}
+  }
+
+  function drawPl(){
+    var p=pl,px=(p.pc+(p.c-p.pc)*p.pg)*CELL+CELL/2,py=(p.pr+(p.r-p.pr)*p.pg)*CELL+CELL/2;
+    var rad=CELL*0.45,ang=p.dir*Math.PI/2;
+    p.mo+=p.md*0.12;if(p.mo>0.35){p.mo=0.35;p.md=-1;}if(p.mo<0.02){p.mo=0.02;p.md=1;}if(!p.mv)p.mo=0.05;
+    var ma=p.mo*Math.PI;
+    ctx.save();ctx.translate(px,py);
+    ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(0,0,rad,ang+ma,ang+6.28-ma);ctx.lineTo(0,0);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#44ddff';ctx.beginPath();ctx.arc(Math.cos(ang)*rad*0.3,Math.sin(ang)*rad*0.3,rad*0.28,0,6.28);ctx.fill();
+    ctx.strokeStyle='#cc9900';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,rad*0.85,ang+1.9,ang-1.9);ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGh(g){
+    var px=(g.pc+(g.c-g.pc)*g.pg)*CELL+CELL/2,py=(g.pr+(g.r-g.pr)*g.pg)*CELL+CELL/2,rad=CELL*0.45;
+    ctx.save();ctx.translate(px,py);
+    if(g.mode==='eaten'){drawEy(g.dir);ctx.restore();return;}
+    var col=g.mode==='frightened'?'#2222ff':g.color;
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-2,rad*0.8,Math.PI,0);ctx.lineTo(rad*0.8,rad*0.5);
+    var w=Date.now()*0.008;for(var i=4;i>=-4;i--)ctx.lineTo((i/4)*rad*0.8,rad*0.5+Math.sin(w+i)*3);
+    ctx.lineTo(-rad*0.8,-2);ctx.closePath();ctx.fill();
+    ctx.fillRect(-1,-rad-4,2,6);ctx.fillStyle=g.mode==='frightened'?'#8888ff':'#fff';ctx.beginPath();ctx.arc(0,-rad-5,2.5,0,6.28);ctx.fill();
+    if(g.mode==='frightened'){ctx.fillStyle='#fff';ctx.fillRect(-5,-4,3,3);ctx.fillRect(3,-4,3,3);}else drawEy(g.dir);
+    ctx.restore();
+  }
+  function drawEy(dir){var dx=DC[dir]*2,dy=DR[dir]*2;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-4,-3,3.5,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(4,-3,3.5,0,6.28);ctx.fill();ctx.fillStyle='#112a';ctx.beginPath();ctx.arc(-4+dx,-3+dy,2,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(4+dx,-3+dy,2,0,6.28);ctx.fill();}
+
+  return{
+    start:function(){
+      canvas.width=W;canvas.height=H;resize();
+      map=cloneM();totalD=cntD(map);eaten=0;score=0;lives=3;level=1;
+      pl=mkP();gh=[0,1,2,3].map(mkG);fTimer=0;mTimer=0;mPhase=0;state='play';initS();accum=0;
+    },
+    update:function(dt){
+      accum+=dt;while(accum>=STEP){accum-=STEP;
+        if(state==='play'){moveP();updModes();for(var i=0;i<gh.length;i++)moveG(gh[i]);chkCol();}
+      }
+      hudLeft.textContent='SCORE: '+score;hudCenter.textContent='LEVEL: '+level;hudRight.innerHTML='<span style="color:#f44">♥ '+lives+'</span>';
+    },
+    draw:function(){
+      ctx.fillStyle='#0d0d30';ctx.fillRect(0,0,W,H);drawMap();
+      if(state!=='over')drawPl();
+      for(var i=0;i<gh.length;i++)if(!gh[i].inH)drawGh(gh[i]);
+    },
+    ondir:function(d){if(state==='play')pl.nd=d;},
+    onkey:function(k){
+      if(k==='ArrowRight'||k==='d'||k==='D')this.ondir(0);
+      else if(k==='ArrowDown'||k==='s'||k==='S')this.ondir(1);
+      else if(k==='ArrowLeft'||k==='a'||k==='A')this.ondir(2);
+      else if(k==='ArrowUp'||k==='w'||k==='W')this.ondir(3);
+    }
+  };
+})();
+
+// ════════════════════════════════════════════════════════
+//  SNAKE
+// ════════════════════════════════════════════════════════
+var Snake=(function(){
+  var CELL=20,COLS=25,ROWS=25,W=COLS*CELL,H=ROWS*CELL;
+  var DR=[0,1,0,-1],DC=[1,0,-1,0];
+  var snake,dir,nextDir,food,score,state,timer,speed;
+
+  function spawn(){
+    var r,c;do{r=Math.random()*ROWS|0;c=Math.random()*COLS|0;}
+    while(snake.some(function(s){return s.r===r&&s.c===c;}));
+    food={r:r,c:c};
+  }
+
+  return{
+    start:function(){
+      canvas.width=W;canvas.height=H;resize();
+      snake=[{r:12,c:12},{r:12,c:11},{r:12,c:10}];dir=0;nextDir=0;score=0;state='play';timer=0;speed=0.1;
+      spawn();
+    },
+    update:function(dt){
+      if(state!=='play')return;
+      timer+=dt;
+      if(timer>=speed){
+        timer-=speed;dir=nextDir;
+        var head=snake[0];var nr=head.r+DR[dir],nc=head.c+DC[dir];
+        // Wall wrap
+        if(nr<0)nr=ROWS-1;if(nr>=ROWS)nr=0;if(nc<0)nc=COLS-1;if(nc>=COLS)nc=0;
+        // Self collision
+        for(var i=0;i<snake.length;i++)if(snake[i].r===nr&&snake[i].c===nc){state='over';showResult('GAME OVER',false,score);return;}
+        snake.unshift({r:nr,c:nc});
+        if(nr===food.r&&nc===food.c){score+=10;tone(440,0.08,'square',0.06);if(speed>0.05)speed-=0.002;spawn();}
+        else snake.pop();
+      }
+      hudLeft.textContent='SCORE: '+score;hudCenter.textContent='SNAKE';hudRight.textContent='LEN: '+snake.length;
+    },
+    draw:function(){
+      ctx.fillStyle='#0d0d30';ctx.fillRect(0,0,W,H);
+      // Grid
+      ctx.strokeStyle='rgba(34,85,204,0.1)';ctx.lineWidth=0.5;
+      for(var r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(W,r*CELL);ctx.stroke();}
+      for(var c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,H);ctx.stroke();}
+      // Food (red power brick)
+      var fx=food.c*CELL,fy=food.r*CELL;
+      var p=Math.sin(Date.now()*0.005)*0.2+0.8;ctx.globalAlpha=p;
+      drawBrick(fx+1,fy+1,CELL-2,CELL-2,'#ff3333','#ff6666');
+      ctx.globalAlpha=1;
+      // Snake
+      for(var i=0;i<snake.length;i++){
+        var s=snake[i],x=s.c*CELL,y=s.r*CELL;
+        var col=i===0?'#ffd700':'#44ddff';
+        drawBrick(x+1,y+1,CELL-2,CELL-2,col,i===0?'#ffee55':'#66eeff');
+        if(i===0){
+          // Eyes on head
+          var d=dir,dx=DC[d],dy=DR[d];
+          ctx.fillStyle='#000';
+          ctx.beginPath();ctx.arc(x+CELL/2+dx*4-dy*3,y+CELL/2+dy*4+dx*3,2,0,6.28);ctx.fill();
+          ctx.beginPath();ctx.arc(x+CELL/2+dx*4+dy*3,y+CELL/2+dy*4-dx*3,2,0,6.28);ctx.fill();
         }
+      }
+    },
+    ondir:function(d){
+      if((d+2)%4!==dir)nextDir=d; // no 180
+    },
+    onkey:function(k){
+      if(k==='ArrowRight'||k==='d'||k==='D')this.ondir(0);
+      else if(k==='ArrowDown'||k==='s'||k==='S')this.ondir(1);
+      else if(k==='ArrowLeft'||k==='a'||k==='A')this.ondir(2);
+      else if(k==='ArrowUp'||k==='w'||k==='W')this.ondir(3);
     }
+  };
+})();
 
-    function playSound(type) {
-        if (!audioCtx) return;
+// ════════════════════════════════════════════════════════
+//  BREAKOUT
+// ════════════════════════════════════════════════════════
+var Breakout=(function(){
+  var GW=504,GH=550;
+  var BCOLS=10,BROWS=8,BW=46,BH=16,BPAD=4,BOFFX=7,BOFFY=50;
+  var bricks,ball,paddle,score,lives,state;
+  var BRICK_COLORS=['#ff2222','#ff2222','#ff8800','#ff8800','#ffd700','#ffd700','#22cc44','#22cc44'];
 
-        const now = audioCtx.currentTime;
+  function initBricks(){
+    bricks=[];
+    for(var r=0;r<BROWS;r++)for(var c=0;c<BCOLS;c++){
+      bricks.push({x:BOFFX+c*(BW+BPAD),y:BOFFY+r*(BH+BPAD),w:BW,h:BH,alive:true,color:BRICK_COLORS[r],pts:(BROWS-r)*10});
+    }
+  }
 
-        switch(type) {
-            case 'wakka':
-                playWakka(now);
-                break;
-            case 'eatGhost':
-                playEatGhost(now);
-                break;
-            case 'death':
-                playDeath(now);
-                break;
-            case 'powerPellet':
-                playPowerPellet(now);
-                break;
-            case 'levelClear':
-                playLevelClear(now);
-                break;
-            case 'fruit':
-                playFruit(now);
-                break;
+  function resetBall(){
+    ball={x:GW/2,y:GH-80,dx:3*(Math.random()>0.5?1:-1),dy:-4,r:6,speed:4};
+    paddle={x:GW/2-40,y:GH-40,w:80,h:12};
+  }
+
+  return{
+    start:function(){
+      canvas.width=GW;canvas.height=GH;resize();
+      initBricks();resetBall();score=0;lives=3;state='play';
+    },
+    update:function(dt){
+      if(state!=='play')return;
+      // Paddle input
+      if(keys['ArrowLeft']||keys['a']||keys['A'])paddle.x-=7;
+      if(keys['ArrowRight']||keys['d']||keys['D'])paddle.x+=7;
+      if(paddle.x<0)paddle.x=0;if(paddle.x>GW-paddle.w)paddle.x=GW-paddle.w;
+      // Ball
+      ball.x+=ball.dx;ball.y+=ball.dy;
+      if(ball.x-ball.r<0){ball.x=ball.r;ball.dx=-ball.dx;}
+      if(ball.x+ball.r>GW){ball.x=GW-ball.r;ball.dx=-ball.dx;}
+      if(ball.y-ball.r<0){ball.y=ball.r;ball.dy=-ball.dy;}
+      // Paddle collision
+      if(ball.dy>0&&ball.y+ball.r>=paddle.y&&ball.y+ball.r<=paddle.y+paddle.h+4&&ball.x>=paddle.x-ball.r&&ball.x<=paddle.x+paddle.w+ball.r){
+        ball.dy=-Math.abs(ball.dy);
+        var hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);
+        ball.dx=hit*5;
+        tone(330,0.06,'square',0.05);
+      }
+      // Brick collision
+      var allDead=true;
+      for(var i=0;i<bricks.length;i++){
+        var b=bricks[i];if(!b.alive)continue;allDead=false;
+        if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){
+          b.alive=false;score+=b.pts;ball.dy=-ball.dy;
+          tone(500+Math.random()*200,0.06,'square',0.06);
         }
+      }
+      if(allDead){state='win';showResult('YOU WIN!',true,score);}
+      // Ball lost
+      if(ball.y>GH+20){lives--;if(lives<=0){state='over';showResult('GAME OVER',false,score);}else resetBall();}
+      hudLeft.textContent='SCORE: '+score;hudCenter.textContent='BREAKOUT';hudRight.innerHTML='<span style="color:#f44">♥ '+lives+'</span>';
+    },
+    draw:function(){
+      ctx.fillStyle='#0d0d30';ctx.fillRect(0,0,GW,GH);
+      // Bricks
+      for(var i=0;i<bricks.length;i++){var b=bricks[i];if(!b.alive)continue;drawBrick(b.x,b.y,b.w,b.h,b.color);}
+      // Paddle (grey LEGO plate)
+      drawBrick(paddle.x,paddle.y,paddle.w,paddle.h,'#a0a0b0','#c0c0d0');
+      drawStud(paddle.x+15,paddle.y+paddle.h/2,3,'#b0b0c0');
+      drawStud(paddle.x+paddle.w/2,paddle.y+paddle.h/2,3,'#b0b0c0');
+      drawStud(paddle.x+paddle.w-15,paddle.y+paddle.h/2,3,'#b0b0c0');
+      // Ball (yellow stud)
+      ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,6.28);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.beginPath();ctx.arc(ball.x-2,ball.y-2,ball.r*0.4,0,6.28);ctx.fill();
+    },
+    onkey:function(k){},
+    ondir:function(d){
+      if(d===0){keys['ArrowRight']=true;keys['ArrowLeft']=false;setTimeout(function(){keys['ArrowRight']=false;},200);}
+      if(d===2){keys['ArrowLeft']=true;keys['ArrowRight']=false;setTimeout(function(){keys['ArrowLeft']=false;},200);}
     }
+  };
+})();
 
-    function playWakka(time) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(400 + Math.random() * 100, time);
-        gain.gain.setValueAtTime(0.1, time);
-        gain.gain.exponentialDecayTo ? gain.gain.exponentialDecayTo(0.01, time + 0.05) : gain.gain.setValueAtTime(0.01, time + 0.05);
-        osc.start(time);
-        osc.stop(time + 0.06);
+// ════════════════════════════════════════════════════════
+//  SPACE INVADERS
+// ════════════════════════════════════════════════════════
+var Invaders=(function(){
+  var GW=504,GH=550;
+  var ICOLS=8,IROWS=5,IW=36,IH=28,IPADX=10,IPADY=8;
+  var invaders,player,bullets,iBullets,score,lives,state;
+  var moveDir,moveTimer,moveDelay,dropNext;
+
+  function initInvaders(){
+    invaders=[];
+    var startX=(GW-(ICOLS*(IW+IPADX)-IPADX))/2;
+    for(var r=0;r<IROWS;r++)for(var c=0;c<ICOLS;c++){
+      invaders.push({x:startX+c*(IW+IPADX),y:40+r*(IH+IPADY),w:IW,h:IH,alive:true,row:r});
     }
+  }
 
-    function playEatGhost(time) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, time);
-        osc.frequency.linearRampToValueAtTime(800, time + 0.2);
-        gain.gain.setValueAtTime(0.15, time);
-        gain.gain.linearRampToValueAtTime(0.01, time + 0.25);
-        osc.start(time);
-        osc.stop(time + 0.3);
-    }
+  function resetPlayer(){
+    player={x:GW/2-18,y:GH-50,w:36,h:20};
+  }
 
-    function playDeath(time) {
-        for (let i = 0; i < 8; i++) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(400 - i * 40, time + i * 0.1);
-            gain.gain.setValueAtTime(0.12, time + i * 0.1);
-            gain.gain.linearRampToValueAtTime(0.01, time + i * 0.1 + 0.1);
-            osc.start(time + i * 0.1);
-            osc.stop(time + i * 0.1 + 0.15);
+  return{
+    start:function(){
+      canvas.width=GW;canvas.height=GH;resize();
+      initInvaders();resetPlayer();bullets=[];iBullets=[];score=0;lives=3;state='play';
+      moveDir=1;moveTimer=0;moveDelay=0.6;dropNext=false;
+    },
+    update:function(dt){
+      if(state!=='play')return;
+      // Player movement
+      if(keys['ArrowLeft']||keys['a']||keys['A'])player.x-=5;
+      if(keys['ArrowRight']||keys['d']||keys['D'])player.x+=5;
+      if(player.x<0)player.x=0;if(player.x>GW-player.w)player.x=GW-player.w;
+
+      // Player bullets
+      for(var i=bullets.length-1;i>=0;i--){
+        bullets[i].y-=8;if(bullets[i].y<-10){bullets.splice(i,1);continue;}
+        // Hit invader?
+        for(var j=0;j<invaders.length;j++){
+          var inv=invaders[j];if(!inv.alive)continue;
+          if(bullets[i]&&bullets[i].x>inv.x&&bullets[i].x<inv.x+inv.w&&bullets[i].y>inv.y&&bullets[i].y<inv.y+inv.h){
+            inv.alive=false;score+=10*(IROWS-inv.row);bullets.splice(i,1);
+            tone(500,0.06,'square',0.06);
+            break;
+          }
         }
-    }
+      }
 
-    function playPowerPellet(time) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(300, time);
-        osc.frequency.linearRampToValueAtTime(600, time + 0.15);
-        gain.gain.setValueAtTime(0.15, time);
-        gain.gain.linearRampToValueAtTime(0.01, time + 0.2);
-        osc.start(time);
-        osc.stop(time + 0.25);
-    }
+      // Check win
+      if(!invaders.some(function(v){return v.alive;})){state='win';showResult('EARTH IS SAVED!',true,score);return;}
 
-    function playLevelClear(time) {
-        const notes = [523, 659, 784, 1047];
-        notes.forEach((freq, i) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(freq, time + i * 0.15);
-            gain.gain.setValueAtTime(0.12, time + i * 0.15);
-            gain.gain.linearRampToValueAtTime(0.01, time + i * 0.15 + 0.15);
-            osc.start(time + i * 0.15);
-            osc.stop(time + i * 0.15 + 0.2);
-        });
-    }
-
-    function playFruit(time) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(800, time);
-        osc.frequency.linearRampToValueAtTime(1200, time + 0.1);
-        gain.gain.setValueAtTime(0.15, time);
-        gain.gain.linearRampToValueAtTime(0.01, time + 0.15);
-        osc.start(time);
-        osc.stop(time + 0.2);
-    }
-
-    // ============================================
-    // INITIALIZATION
-    // ============================================
-
-    function init() {
-        // Set canvas size
-        canvas.width = MAZE_WIDTH * TILE_SIZE;
-        canvas.height = MAZE_HEIGHT * TILE_SIZE;
-
-        // Generate stars
-        stars = [];
-        for (let i = 0; i < 100; i++) {
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 2 + 0.5,
-                brightness: Math.random()
-            });
-        }
-
-        // Draw start screen ship
-        drawStartShip();
-
-        // Update high score display
-        highScoreEl.textContent = highScore;
-
-        // Check for touch device
-        isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        if (isTouchDevice) {
-            dpad.style.display = 'grid';
-        }
-
-        // Start render loop
-        requestAnimationFrame(gameLoop);
-    }
-
-    function drawStartShip() {
-        const shipCanvas = document.getElementById('startShip');
-        const shipCtx = shipCanvas.getContext('2d');
-
-        // Classic Lego Space ship
-        shipCtx.fillStyle = COLORS.yellow;
-        shipCtx.beginPath();
-        shipCtx.moveTo(60, 10);
-        shipCtx.lineTo(100, 40);
-        shipCtx.lineTo(100, 50);
-        shipCtx.lineTo(80, 60);
-        shipCtx.lineTo(40, 60);
-        shipCtx.lineTo(20, 50);
-        shipCtx.lineTo(20, 40);
-        shipCtx.closePath();
-        shipCtx.fill();
-
-        // Cockpit
-        shipCtx.fillStyle = '#00BFFF';
-        shipCtx.beginPath();
-        shipCtx.ellipse(60, 35, 15, 10, 0, 0, Math.PI * 2);
-        shipCtx.fill();
-
-        // Wings
-        shipCtx.fillStyle = COLORS.spaceBlue;
-        shipCtx.fillRect(10, 45, 30, 8);
-        shipCtx.fillRect(80, 45, 30, 8);
-
-        // Engine glow
-        shipCtx.fillStyle = '#FF6600';
-        shipCtx.beginPath();
-        shipCtx.moveTo(45, 60);
-        shipCtx.lineTo(50, 75);
-        shipCtx.lineTo(60, 70);
-        shipCtx.lineTo(70, 75);
-        shipCtx.lineTo(75, 60);
-        shipCtx.closePath();
-        shipCtx.fill();
-    }
-
-    function resetMaze() {
-        maze = MAZE_TEMPLATE.map(row => [...row]);
-        dotsRemaining = 0;
-
-        // Count dots
-        for (let y = 0; y < MAZE_HEIGHT; y++) {
-            for (let x = 0; x < MAZE_WIDTH; x++) {
-                if (maze[y][x] === 2 || maze[y][x] === 3) {
-                    dotsRemaining++;
-                }
-            }
-        }
-    }
-
-    function resetEntities() {
-        // Pac-Man starts below ghost house
-        pacman = {
-            x: 14,
-            y: 23,
-            direction: 0, // 0=right, 1=down, 2=left, 3=up
-            nextDirection: 0,
-            mouthOpen: true,
-            mouthAngle: 0,
-            moving: false,
-            moveProgress: 0
-        };
-
-        // Ghosts
-        ghosts = [
-            { name: 'blinky', color: COLORS.ghostRed, x: 14, y: 11, direction: 2, inHouse: false, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 25, scatterY: -3 },
-            { name: 'pinky', color: COLORS.ghostPink, x: 14, y: 14, direction: 0, inHouse: true, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 2, scatterY: -3 },
-            { name: 'inky', color: COLORS.ghostCyan, x: 12, y: 14, direction: 0, inHouse: true, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 27, scatterY: 34 },
-            { name: 'clyde', color: COLORS.ghostOrange, x: 16, y: 14, direction: 0, inHouse: true, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 0, scatterY: 34 }
-        ];
-
-        ghosts.forEach(g => {
-            g.moveProgress = 0;
-            g.vulnerable = false;
-            g.eaten = false;
-            g.exitTimer = 0;
-        });
-
-        powerMode = false;
-        powerModeTimer = 0;
-        ghostEatChain = 0;
-    }
-
-    function startGame() {
-        initAudio();
-        gameState = 'playing';
-        score = 0;
-        lives = 3;
-        level = 1;
-        fruitEaten = 0;
-        gameSpeed = 1;
-
-        resetMaze();
-        resetEntities();
-        updateHUD();
-
-        overlay.classList.add('hidden');
-    }
-
-    function nextLevel() {
-        level++;
-        gameSpeed = 1 + (level - 1) * 0.1;
-        fruitEaten = 0;
-        fruitVisible = false;
-
-        resetMaze();
-        resetEntities();
-        updateHUD();
-
-        gameState = 'playing';
-    }
-
-    function loseLife() {
-        lives--;
-        updateHUD();
-
-        if (lives <= 0) {
-            gameOver();
+      // Invader movement
+      moveTimer+=dt;
+      if(moveTimer>=moveDelay){
+        moveTimer=0;
+        if(dropNext){
+          for(var i=0;i<invaders.length;i++)if(invaders[i].alive)invaders[i].y+=IH/2;
+          moveDir=-moveDir;dropNext=false;
+          if(moveDelay>0.15)moveDelay-=0.03;
         } else {
-            resetEntities();
+          var edge=false;
+          for(var i=0;i<invaders.length;i++){
+            if(!invaders[i].alive)continue;
+            invaders[i].x+=moveDir*12;
+            if(invaders[i].x<=0||invaders[i].x+IW>=GW)edge=true;
+          }
+          if(edge)dropNext=true;
         }
-    }
-
-    function gameOver() {
-        gameState = 'gameover';
-
-        if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('legoSpacePacmanHighScore', highScore);
-            highScoreEl.textContent = highScore;
+        // Invader shoot
+        var alive=invaders.filter(function(v){return v.alive;});
+        if(alive.length>0&&Math.random()<0.3){
+          var shooter=alive[Math.random()*alive.length|0];
+          iBullets.push({x:shooter.x+IW/2,y:shooter.y+IH});
         }
+      }
 
-        overlay.innerHTML = `
-            <h1>GAME OVER</h1>
-            <p>Final Score: ${score}</p>
-            <p>Level Reached: ${level}</p>
-            <p class="blink" style="margin-top: 30px;">PRESS SPACE OR TAP TO RESTART</p>
-        `;
-        overlay.classList.remove('hidden');
-    }
-
-    function levelComplete() {
-        gameState = 'levelcomplete';
-        playSound('levelClear');
-
-        setTimeout(() => {
-            nextLevel();
-        }, 2000);
-    }
-
-    function updateHUD() {
-        scoreEl.textContent = score;
-        levelEl.textContent = level;
-
-        livesEl.innerHTML = '';
-        for (let i = 0; i < lives; i++) {
-            const life = document.createElement('div');
-            life.className = 'life-icon';
-            livesEl.appendChild(life);
+      // Invader bullets
+      for(var i=iBullets.length-1;i>=0;i--){
+        iBullets[i].y+=4;if(iBullets[i].y>GH){iBullets.splice(i,1);continue;}
+        if(iBullets[i].x>player.x&&iBullets[i].x<player.x+player.w&&iBullets[i].y>player.y&&iBullets[i].y<player.y+player.h){
+          iBullets.splice(i,1);lives--;
+          tone(200,0.2,'sawtooth',0.08);
+          if(lives<=0){state='over';showResult('GAME OVER',false,score);}
+          else resetPlayer();
         }
-    }
-
-    // ============================================
-    // GAME LOOP
-    // ============================================
-
-    function gameLoop(timestamp) {
-        const deltaTime = timestamp - lastTime;
-        lastTime = timestamp;
-
-        animFrame++;
-
-        if (gameState === 'playing') {
-            update(deltaTime);
-        }
-
-        render();
-
-        requestAnimationFrame(gameLoop);
-    }
-
-    function update(deltaTime) {
-        const speed = 0.1 * gameSpeed;
-
-        // Update Pac-Man
-        updatePacman(speed);
-
-        // Update ghosts
-        updateGhosts(speed);
-
-        // Update power mode
-        if (powerMode) {
-            powerModeTimer -= deltaTime;
-            if (powerModeTimer <= 0) {
-                powerMode = false;
-                ghosts.forEach(g => {
-                    g.vulnerable = false;
-                });
-            }
-        }
-
-        // Update fruit
-        if (!fruitVisible && fruitEaten < 2) {
-            const dotsEaten = countInitialDots() - dotsRemaining;
-            if ((dotsEaten === 70 || dotsEaten === 170) && fruitEaten < 2) {
-                fruitVisible = true;
-                fruitTimer = 10000; // 10 seconds
-            }
-        }
-
-        if (fruitVisible) {
-            fruitTimer -= deltaTime;
-            if (fruitTimer <= 0) {
-                fruitVisible = false;
-            }
-        }
-
-        // Check collisions
-        checkCollisions();
-
-        // Check level complete
-        if (dotsRemaining === 0) {
-            levelComplete();
-        }
-    }
-
-    function countInitialDots() {
-        let count = 0;
-        for (let y = 0; y < MAZE_HEIGHT; y++) {
-            for (let x = 0; x < MAZE_WIDTH; x++) {
-                if (MAZE_TEMPLATE[y][x] === 2 || MAZE_TEMPLATE[y][x] === 3) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    function updatePacman(speed) {
-        // Try to change direction
-        if (pacman.nextDirection !== pacman.direction) {
-            if (canMove(pacman.x, pacman.y, pacman.nextDirection)) {
-                pacman.direction = pacman.nextDirection;
-            }
-        }
-
-        // Move
-        if (canMove(pacman.x, pacman.y, pacman.direction)) {
-            pacman.moving = true;
-            pacman.moveProgress += speed;
-
-            if (pacman.moveProgress >= 1) {
-                pacman.moveProgress = 0;
-
-                // Actually move
-                const dx = [1, 0, -1, 0][pacman.direction];
-                const dy = [0, 1, 0, -1][pacman.direction];
-                pacman.x += dx;
-                pacman.y += dy;
-
-                // Tunnel wrap
-                if (pacman.x < 0) pacman.x = MAZE_WIDTH - 1;
-                if (pacman.x >= MAZE_WIDTH) pacman.x = 0;
-
-                // Eat dots
-                const tile = maze[pacman.y][pacman.x];
-                if (tile === 2) {
-                    maze[pacman.y][pacman.x] = 0;
-                    score += 10;
-                    dotsRemaining--;
-                    playSound('wakka');
-                    updateHUD();
-                } else if (tile === 3) {
-                    maze[pacman.y][pacman.x] = 0;
-                    score += 50;
-                    dotsRemaining--;
-                    activatePowerMode();
-                    playSound('powerPellet');
-                    updateHUD();
-                }
-            }
-        } else {
-            pacman.moving = false;
-        }
-
-        // Animate mouth
-        if (pacman.moving) {
-            pacman.mouthAngle = Math.abs(Math.sin(animFrame * 0.3)) * 0.5;
-        }
-    }
-
-    function activatePowerMode() {
-        powerMode = true;
-        powerModeTimer = 8000 - level * 500; // Gets shorter each level
-        if (powerModeTimer < 3000) powerModeTimer = 3000;
-
-        ghostEatChain = 0;
-
-        ghosts.forEach(g => {
-            if (!g.eaten) {
-                g.vulnerable = true;
-                // Reverse direction
-                g.direction = (g.direction + 2) % 4;
-            }
-        });
-    }
-
-    function updateGhosts(speed) {
-        const ghostSpeed = speed * 0.9;
-        const vulnerableSpeed = speed * 0.5;
-        const eatenSpeed = speed * 2;
-
-        ghosts.forEach((ghost, index) => {
-            // Handle ghost house exit
-            if (ghost.inHouse) {
-                ghost.exitTimer += 16; // roughly 16ms per frame
-                const exitDelay = [0, 2000, 4000, 6000][index];
-
-                if (ghost.exitTimer >= exitDelay) {
-                    ghost.inHouse = false;
-                    ghost.x = 14;
-                    ghost.y = 11;
-                }
-                return;
-            }
-
-            // Determine speed
-            let currentSpeed = ghostSpeed;
-            if (ghost.vulnerable) currentSpeed = vulnerableSpeed;
-            if (ghost.eaten) currentSpeed = eatenSpeed;
-
-            ghost.moveProgress += currentSpeed;
-
-            if (ghost.moveProgress >= 1) {
-                ghost.moveProgress = 0;
-
-                // Move ghost
-                const dx = [1, 0, -1, 0][ghost.direction];
-                const dy = [0, 1, 0, -1][ghost.direction];
-                ghost.x += dx;
-                ghost.y += dy;
-
-                // Tunnel wrap
-                if (ghost.x < 0) ghost.x = MAZE_WIDTH - 1;
-                if (ghost.x >= MAZE_WIDTH) ghost.x = 0;
-
-                // Check if returned to ghost house after being eaten
-                if (ghost.eaten && ghost.x >= 12 && ghost.x <= 16 && ghost.y >= 13 && ghost.y <= 15) {
-                    ghost.eaten = false;
-                    ghost.vulnerable = false;
-                }
-
-                // Choose new direction
-                chooseGhostDirection(ghost);
-            }
-        });
-    }
-
-    function chooseGhostDirection(ghost) {
-        // Calculate target
-        if (ghost.eaten) {
-            // Return to ghost house
-            ghost.targetX = 14;
-            ghost.targetY = 14;
-        } else if (ghost.vulnerable) {
-            // Run away (random-ish)
-            ghost.targetX = Math.floor(Math.random() * MAZE_WIDTH);
-            ghost.targetY = Math.floor(Math.random() * MAZE_HEIGHT);
-        } else if (ghost.mode === 'scatter') {
-            ghost.targetX = ghost.scatterX;
-            ghost.targetY = ghost.scatterY;
-        } else {
-            // Chase mode - different for each ghost
-            switch (ghost.name) {
-                case 'blinky':
-                    // Targets Pac-Man directly
-                    ghost.targetX = pacman.x;
-                    ghost.targetY = pacman.y;
-                    break;
-                case 'pinky':
-                    // Targets 4 tiles ahead of Pac-Man
-                    const dx = [4, 0, -4, 0][pacman.direction];
-                    const dy = [0, 4, 0, -4][pacman.direction];
-                    ghost.targetX = pacman.x + dx;
-                    ghost.targetY = pacman.y + dy;
-                    break;
-                case 'inky':
-                    // Complex targeting based on Blinky
-                    const blinky = ghosts[0];
-                    const aheadX = pacman.x + [2, 0, -2, 0][pacman.direction];
-                    const aheadY = pacman.y + [0, 2, 0, -2][pacman.direction];
-                    ghost.targetX = aheadX * 2 - blinky.x;
-                    ghost.targetY = aheadY * 2 - blinky.y;
-                    break;
-                case 'clyde':
-                    // Chases when far, scatters when close
-                    const dist = Math.sqrt(Math.pow(ghost.x - pacman.x, 2) + Math.pow(ghost.y - pacman.y, 2));
-                    if (dist > 8) {
-                        ghost.targetX = pacman.x;
-                        ghost.targetY = pacman.y;
-                    } else {
-                        ghost.targetX = ghost.scatterX;
-                        ghost.targetY = ghost.scatterY;
-                    }
-                    break;
-            }
-        }
-
-        // Find best direction
-        const directions = [0, 1, 2, 3]; // right, down, left, up
-        const opposite = (ghost.direction + 2) % 4;
-
-        let bestDir = ghost.direction;
-        let bestDist = Infinity;
-
-        directions.forEach(dir => {
-            // Can't reverse
-            if (dir === opposite) return;
-
-            const nx = ghost.x + [1, 0, -1, 0][dir];
-            const ny = ghost.y + [0, 1, 0, -1][dir];
-
-            // Check if can move
-            if (!isWalkable(nx, ny, true)) return;
-
-            const dist = Math.pow(nx - ghost.targetX, 2) + Math.pow(ny - ghost.targetY, 2);
-            if (dist < bestDist) {
-                bestDist = dist;
-                bestDir = dir;
-            }
-        });
-
-        ghost.direction = bestDir;
-
-        // Occasionally switch modes
-        if (Math.random() < 0.001) {
-            ghost.mode = ghost.mode === 'scatter' ? 'chase' : 'scatter';
-        }
-
-        // In later levels, chase more
-        if (level > 1 && ghost.mode === 'scatter' && Math.random() < 0.01 * level) {
-            ghost.mode = 'chase';
-        }
-    }
-
-    function canMove(x, y, direction) {
-        const dx = [1, 0, -1, 0][direction];
-        const dy = [0, 1, 0, -1][direction];
-        const nx = x + dx;
-        const ny = y + dy;
-
-        // Tunnel
-        if (nx < 0 || nx >= MAZE_WIDTH) return true;
-
-        return isWalkable(nx, ny, false);
-    }
-
-    function isWalkable(x, y, isGhost) {
-        if (x < 0 || x >= MAZE_WIDTH) return true; // tunnel
-        if (y < 0 || y >= MAZE_HEIGHT) return false;
-
-        const tile = maze[y][x];
-        if (tile === 1) return false; // wall
-        if (tile === 4 && !isGhost) return false; // ghost house
-
-        return true;
-    }
-
-    function checkCollisions() {
-        // Fruit collision
-        if (fruitVisible) {
-            const fruitX = 14;
-            const fruitY = 17;
-
-            if (pacman.x === fruitX && pacman.y === fruitY) {
-                fruitVisible = false;
-                fruitEaten++;
-                const fruitIndex = Math.min(level - 1, FRUIT_TYPES.length - 1);
-                score += FRUIT_POINTS[fruitIndex];
-                playSound('fruit');
-                updateHUD();
-            }
-        }
-
-        // Ghost collision
-        ghosts.forEach(ghost => {
-            if (ghost.inHouse || ghost.eaten) return;
-
-            const dx = Math.abs(ghost.x - pacman.x);
-            const dy = Math.abs(ghost.y - pacman.y);
-
-            if (dx < 0.8 && dy < 0.8) {
-                if (ghost.vulnerable) {
-                    // Eat ghost
-                    ghost.eaten = true;
-                    ghostEatChain++;
-                    const points = 200 * Math.pow(2, ghostEatChain - 1);
-                    score += points;
-                    playSound('eatGhost');
-                    updateHUD();
-                } else {
-                    // Pac-Man dies
-                    playSound('death');
-                    loseLife();
-                }
-            }
-        });
-    }
-
-    // ============================================
-    // RENDERING
-    // ============================================
-
-    function render() {
-        // Clear
-        ctx.fillStyle = COLORS.black;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw stars
-        drawStars();
-
-        // Draw maze
-        drawMaze();
-
-        // Draw fruit
-        if (fruitVisible) {
-            drawFruit(14, 17);
-        }
-
-        // Draw ghosts
-        ghosts.forEach(ghost => {
-            if (!ghost.inHouse || gameState !== 'playing') {
-                drawGhost(ghost);
-            }
-        });
-
-        // Draw Pac-Man
-        if (gameState === 'playing' || gameState === 'start') {
-            drawPacman();
-        }
-
-        // Draw level complete flash
-        if (gameState === 'levelcomplete') {
-            if (Math.floor(animFrame / 10) % 2 === 0) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-        }
-    }
-
-    function drawStars() {
-        stars.forEach(star => {
-            const brightness = 0.3 + star.brightness * 0.7 * (0.5 + 0.5 * Math.sin(animFrame * 0.02 + star.x));
-            ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
-            ctx.beginPath();
-            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-    }
-
-    function drawMaze() {
-        for (let y = 0; y < MAZE_HEIGHT; y++) {
-            for (let x = 0; x < MAZE_WIDTH; x++) {
-                const tile = maze[y][x];
-                const px = x * TILE_SIZE;
-                const py = y * TILE_SIZE;
-
-                if (tile === 1) {
-                    drawLegoBrick(px, py, TILE_SIZE, TILE_SIZE);
-                } else if (tile === 2) {
-                    drawDot(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 3);
-                } else if (tile === 3) {
-                    drawPowerPellet(px + TILE_SIZE / 2, py + TILE_SIZE / 2);
-                }
-            }
-        }
-    }
-
-    function drawLegoBrick(x, y, w, h) {
-        // Main brick
-        ctx.fillStyle = COLORS.spaceBlue;
-        ctx.fillRect(x, y, w, h);
-
-        // Lighter top edge
-        ctx.fillStyle = COLORS.spaceLightBlue;
-        ctx.fillRect(x, y, w, 2);
-        ctx.fillRect(x, y, 2, h);
-
-        // Darker bottom edge
-        ctx.fillStyle = '#001a33';
-        ctx.fillRect(x, y + h - 2, w, 2);
-        ctx.fillRect(x + w - 2, y, 2, h);
-
-        // Stud on top
-        const studSize = 6;
-        const studX = x + w / 2;
-        const studY = y + h / 2;
-
-        // Stud shadow
-        ctx.fillStyle = '#001a33';
-        ctx.beginPath();
-        ctx.arc(studX + 1, studY + 1, studSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Main stud
-        ctx.fillStyle = COLORS.spaceBlue;
-        ctx.beginPath();
-        ctx.arc(studX, studY, studSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Stud highlight
-        ctx.fillStyle = COLORS.spaceLightBlue;
-        ctx.beginPath();
-        ctx.arc(studX - 1, studY - 1, studSize / 4, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    function drawDot(x, y, radius) {
-        // Small Lego stud (dot)
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(x + 1, y + 1, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = COLORS.yellow;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Highlight
-        ctx.fillStyle = '#FFFF99';
-        ctx.beginPath();
-        ctx.arc(x - 1, y - 1, radius / 2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    function drawPowerPellet(x, y) {
-        const radius = 7;
-        const pulse = Math.sin(animFrame * 0.1) * 0.3 + 0.7;
-
-        // Glow
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2);
-        glow.addColorStop(0, `rgba(255, 215, 0, ${pulse * 0.5})`);
-        glow.addColorStop(1, 'rgba(255, 215, 0, 0)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(x, y, radius * 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Main pellet (2x2 round plate)
-        ctx.fillStyle = COLORS.yellow;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Inner circle (Lego round plate detail)
-        ctx.fillStyle = '#FFC500';
-        ctx.beginPath();
-        ctx.arc(x, y, radius - 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Highlight
-        ctx.fillStyle = '#FFFF99';
-        ctx.beginPath();
-        ctx.arc(x - 2, y - 2, 3, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    function drawPacman() {
-        const x = (pacman.x + 0.5) * TILE_SIZE + pacman.moveProgress * [1, 0, -1, 0][pacman.direction] * TILE_SIZE;
-        const y = (pacman.y + 0.5) * TILE_SIZE + pacman.moveProgress * [0, 1, 0, -1][pacman.direction] * TILE_SIZE;
-        const radius = TILE_SIZE * 0.8;
-
-        ctx.save();
-        ctx.translate(x, y);
-
-        // Rotate based on direction
-        const rotations = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
-        ctx.rotate(rotations[pacman.direction]);
-
-        // Draw as Lego astronaut helmet / classic spaceship
-
-        // Main yellow body (helmet shape)
-        ctx.fillStyle = COLORS.yellow;
-        ctx.beginPath();
-        ctx.arc(0, 0, radius, pacman.mouthAngle, Math.PI * 2 - pacman.mouthAngle);
-        ctx.lineTo(0, 0);
-        ctx.closePath();
-        ctx.fill();
-
-        // Helmet shine
-        ctx.fillStyle = '#FFEE88';
-        ctx.beginPath();
-        ctx.arc(-3, -5, radius * 0.3, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Visor (blue transparent)
-        ctx.fillStyle = 'rgba(0, 191, 255, 0.7)';
-        ctx.beginPath();
-        ctx.arc(2, 0, radius * 0.5, -0.5, 0.5);
-        ctx.arc(2, 0, radius * 0.3, 0.5, -0.5, true);
-        ctx.closePath();
-        ctx.fill();
-
-        // Lego stud on top
-        ctx.fillStyle = '#FFC500';
-        ctx.beginPath();
-        ctx.arc(0, -radius * 0.4, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#FFEE88';
-        ctx.beginPath();
-        ctx.arc(-1, -radius * 0.4 - 1, 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    function drawGhost(ghost) {
-        const x = (ghost.x + 0.5) * TILE_SIZE + ghost.moveProgress * [1, 0, -1, 0][ghost.direction] * TILE_SIZE;
-        const y = (ghost.y + 0.5) * TILE_SIZE + ghost.moveProgress * [0, 1, 0, -1][ghost.direction] * TILE_SIZE;
-        const w = TILE_SIZE * 1.6;
-        const h = TILE_SIZE * 1.8;
-
-        ctx.save();
-        ctx.translate(x, y);
-
-        // Determine color
-        let bodyColor = ghost.color;
-        let isFlashing = false;
-
-        if (ghost.eaten) {
-            // Just eyes going home
-            drawGhostEyes(0, -2, ghost.direction, true);
-            ctx.restore();
-            return;
-        }
-
-        if (ghost.vulnerable) {
-            if (powerModeTimer < 2000 && Math.floor(animFrame / 8) % 2 === 0) {
-                bodyColor = COLORS.vulnerableWhite;
-                isFlashing = true;
-            } else {
-                bodyColor = COLORS.vulnerable;
-            }
-        }
-
-        // Lego alien minifig body
-
-        // Head (rounded rectangle)
-        ctx.fillStyle = bodyColor;
-        ctx.beginPath();
-        ctx.roundRect(-w / 2, -h / 2, w, h * 0.7, 5);
-        ctx.fill();
-
+      }
+
+      // Invaders reach bottom
+      for(var i=0;i<invaders.length;i++){
+        if(invaders[i].alive&&invaders[i].y+IH>=player.y){state='over';showResult('GAME OVER',false,score);return;}
+      }
+
+      hudLeft.textContent='SCORE: '+score;hudCenter.textContent='INVADERS';hudRight.innerHTML='<span style="color:#f44">♥ '+lives+'</span>';
+    },
+    draw:function(){
+      ctx.fillStyle='#0d0d30';ctx.fillRect(0,0,GW,GH);
+      // Stars
+      var now=Date.now()*0.001;
+      for(var i=0;i<20;i++){
+        var sx=(i*137.5)%GW,sy=(i*97.3+now*5)%GH;
+        ctx.fillStyle='rgba(200,220,255,'+(0.3+0.4*Math.sin(now+i))+')';ctx.fillRect(sx,sy,1.5,1.5);
+      }
+      // Invaders (LEGO aliens)
+      for(var i=0;i<invaders.length;i++){
+        var inv=invaders[i];if(!inv.alive)continue;
+        var cols=['#ff2222','#ff8800','#ffd700','#44ddff','#ff88cc'];
+        var col=cols[inv.row%cols.length];
+        ctx.fillStyle=col;
+        // Body
+        ctx.fillRect(inv.x+4,inv.y+8,inv.w-8,inv.h-8);
+        // Head dome
+        ctx.beginPath();ctx.arc(inv.x+inv.w/2,inv.y+10,inv.w/2-6,Math.PI,0);ctx.fill();
+        // Eyes
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(inv.x+inv.w/2-5,inv.y+12,3,0,6.28);ctx.fill();
+        ctx.beginPath();ctx.arc(inv.x+inv.w/2+5,inv.y+12,3,0,6.28);ctx.fill();
+        ctx.fillStyle='#000';ctx.beginPath();ctx.arc(inv.x+inv.w/2-5,inv.y+12,1.5,0,6.28);ctx.fill();
+        ctx.beginPath();ctx.arc(inv.x+inv.w/2+5,inv.y+12,1.5,0,6.28);ctx.fill();
         // Antenna
-        ctx.fillStyle = bodyColor;
-        ctx.fillRect(-2, -h / 2 - 8, 4, 8);
-        ctx.beginPath();
-        ctx.arc(0, -h / 2 - 10, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Little Lego legs
-        const legY = h * 0.2;
-        const legWobble = Math.sin(animFrame * 0.3) * 2;
-
-        ctx.fillStyle = bodyColor;
-        ctx.fillRect(-w / 3 - 3, legY, 6, 8 + legWobble);
-        ctx.fillRect(w / 3 - 3, legY, 6, 8 - legWobble);
-
-        // Feet (small rectangles)
-        ctx.fillRect(-w / 3 - 5, legY + 6 + legWobble, 10, 4);
-        ctx.fillRect(w / 3 - 5, legY + 6 - legWobble, 10, 4);
-
-        // Face
-        if (ghost.vulnerable) {
-            // Scared face
-            drawGhostScaredFace(0, -2, isFlashing);
-        } else {
-            // Normal alien eyes
-            drawGhostEyes(0, -2, ghost.direction, false);
-        }
-
-        // Lego stud on head
-        ctx.fillStyle = ghost.vulnerable ? '#1919AA' : darkenColor(bodyColor, 20);
-        ctx.beginPath();
-        ctx.arc(0, -h / 2 + 6, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
+        ctx.fillStyle=col;ctx.fillRect(inv.x+inv.w/2-1,inv.y,2,8);
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(inv.x+inv.w/2,inv.y,2.5,0,6.28);ctx.fill();
+        // LEGO stud
+        drawStud(inv.x+inv.w/2,inv.y+inv.h-4,2.5,col);
+      }
+      // Player ship (grey LEGO brick)
+      drawBrick(player.x,player.y,player.w,player.h,'#a0a0b0','#c0c0d0');
+      // Cannon
+      ctx.fillStyle='#ffd700';ctx.fillRect(player.x+player.w/2-2,player.y-6,4,8);
+      // Player bullets
+      ctx.fillStyle='#ffd700';for(var i=0;i<bullets.length;i++){ctx.fillRect(bullets[i].x-1,bullets[i].y,3,8);}
+      // Invader bullets
+      ctx.fillStyle='#ff3333';for(var i=0;i<iBullets.length;i++){ctx.fillRect(iBullets[i].x-1,iBullets[i].y,3,8);}
+    },
+    onkey:function(k){
+      if(state==='play'&&(k===' '||k==='ArrowUp'||k==='w'||k==='W')){
+        if(bullets.length<3){bullets.push({x:player.x+player.w/2,y:player.y-6});tone(600,0.05,'square',0.04);}
+      }
+    },
+    ondir:function(d){
+      if(d===0){keys['ArrowRight']=true;keys['ArrowLeft']=false;setTimeout(function(){keys['ArrowRight']=false;},200);}
+      if(d===2){keys['ArrowLeft']=true;keys['ArrowRight']=false;setTimeout(function(){keys['ArrowLeft']=false;},200);}
+      if(d===3){if(state==='play'&&bullets.length<3){bullets.push({x:player.x+player.w/2,y:player.y-6});tone(600,0.05,'square',0.04);}}
+    },
+    ontap:function(){
+      if(state==='play'&&bullets.length<3){bullets.push({x:player.x+player.w/2,y:player.y-6});tone(600,0.05,'square',0.04);}
     }
+  };
+})();
 
-    function drawGhostEyes(x, y, direction, eyesOnly) {
-        // Big alien eyes
-        const eyeOffsets = [[2, 0], [0, 2], [-2, 0], [0, -2]][direction];
+// ════════════════════════════════════════════════════════
+//  INITIAL STATE
+// ════════════════════════════════════════════════════════
+canvas.width=504;canvas.height=552;resize();
+ctx.fillStyle='#0d0d30';ctx.fillRect(0,0,504,552);
 
-        // Left eye
-        ctx.fillStyle = COLORS.white;
-        ctx.beginPath();
-        ctx.ellipse(x - 5, y, 5, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Right eye
-        ctx.beginPath();
-        ctx.ellipse(x + 5, y, 5, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Pupils
-        ctx.fillStyle = '#0066FF';
-        ctx.beginPath();
-        ctx.arc(x - 5 + eyeOffsets[0], y + eyeOffsets[1], 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x + 5 + eyeOffsets[0], y + eyeOffsets[1], 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Inner pupils
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(x - 5 + eyeOffsets[0], y + eyeOffsets[1], 1.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x + 5 + eyeOffsets[0], y + eyeOffsets[1], 1.5, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    function drawGhostScaredFace(x, y, isWhite) {
-        // X eyes
-        ctx.strokeStyle = isWhite ? '#333' : COLORS.white;
-        ctx.lineWidth = 2;
-
-        // Left X
-        ctx.beginPath();
-        ctx.moveTo(x - 8, y - 4);
-        ctx.lineTo(x - 2, y + 2);
-        ctx.moveTo(x - 2, y - 4);
-        ctx.lineTo(x - 8, y + 2);
-        ctx.stroke();
-
-        // Right X
-        ctx.beginPath();
-        ctx.moveTo(x + 2, y - 4);
-        ctx.lineTo(x + 8, y + 2);
-        ctx.moveTo(x + 8, y - 4);
-        ctx.lineTo(x + 2, y + 2);
-        ctx.stroke();
-
-        // Wavy mouth
-        ctx.beginPath();
-        ctx.moveTo(x - 8, y + 8);
-        for (let i = 0; i < 4; i++) {
-            ctx.quadraticCurveTo(x - 6 + i * 4, y + 6 + (i % 2) * 4, x - 4 + i * 4, y + 8);
-        }
-        ctx.stroke();
-    }
-
-    function drawFruit(tileX, tileY) {
-        const x = (tileX + 0.5) * TILE_SIZE;
-        const y = (tileY + 0.5) * TILE_SIZE;
-        const fruitIndex = Math.min(level - 1, FRUIT_TYPES.length - 1);
-        const fruitType = FRUIT_TYPES[fruitIndex];
-
-        ctx.save();
-        ctx.translate(x, y);
-
-        // Bobbing animation
-        ctx.translate(0, Math.sin(animFrame * 0.1) * 2);
-
-        switch (fruitType) {
-            case 'rocket':
-                // Lego rocket
-                ctx.fillStyle = '#FF4444';
-                ctx.beginPath();
-                ctx.moveTo(0, -12);
-                ctx.lineTo(6, 0);
-                ctx.lineTo(6, 8);
-                ctx.lineTo(-6, 8);
-                ctx.lineTo(-6, 0);
-                ctx.closePath();
-                ctx.fill();
-                // Fins
-                ctx.fillStyle = '#FFFF00';
-                ctx.fillRect(-10, 4, 4, 6);
-                ctx.fillRect(6, 4, 4, 6);
-                // Window
-                ctx.fillStyle = '#00BFFF';
-                ctx.beginPath();
-                ctx.arc(0, -2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                // Flame
-                ctx.fillStyle = '#FF8800';
-                ctx.beginPath();
-                ctx.moveTo(-4, 8);
-                ctx.lineTo(0, 14);
-                ctx.lineTo(4, 8);
-                ctx.closePath();
-                ctx.fill();
-                break;
-
-            case 'moon':
-                // Lego moon
-                ctx.fillStyle = '#DDDDAA';
-                ctx.beginPath();
-                ctx.arc(0, 0, 10, 0, Math.PI * 2);
-                ctx.fill();
-                // Craters
-                ctx.fillStyle = '#AAAAAA';
-                ctx.beginPath();
-                ctx.arc(-4, -2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(3, 4, 2, 0, Math.PI * 2);
-                ctx.fill();
-                break;
-
-            case 'planet':
-                // Ringed planet
-                ctx.fillStyle = '#FF6633';
-                ctx.beginPath();
-                ctx.arc(0, 0, 8, 0, Math.PI * 2);
-                ctx.fill();
-                // Ring
-                ctx.strokeStyle = '#FFCC66';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 14, 4, Math.PI * 0.2, 0, Math.PI * 2);
-                ctx.stroke();
-                break;
-
-            case 'ufo':
-                // Classic UFO
-                ctx.fillStyle = '#888888';
-                ctx.beginPath();
-                ctx.ellipse(0, 2, 12, 4, 0, 0, Math.PI * 2);
-                ctx.fill();
-                // Dome
-                ctx.fillStyle = '#00FFFF';
-                ctx.beginPath();
-                ctx.arc(0, -2, 6, Math.PI, 0);
-                ctx.fill();
-                // Lights
-                ctx.fillStyle = '#FFFF00';
-                for (let i = 0; i < 3; i++) {
-                    ctx.beginPath();
-                    ctx.arc(-6 + i * 6, 4, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                break;
-
-            case 'astronaut':
-                // Lego astronaut minifig
-                ctx.fillStyle = COLORS.white;
-                // Helmet
-                ctx.beginPath();
-                ctx.arc(0, -4, 7, 0, Math.PI * 2);
-                ctx.fill();
-                // Visor
-                ctx.fillStyle = '#00BFFF';
-                ctx.fillRect(-4, -6, 8, 5);
-                // Body
-                ctx.fillStyle = COLORS.white;
-                ctx.fillRect(-5, 3, 10, 8);
-                // Backpack
-                ctx.fillStyle = '#888888';
-                ctx.fillRect(-7, 3, 2, 8);
-                ctx.fillRect(5, 3, 2, 8);
-                break;
-        }
-
-        ctx.restore();
-    }
-
-    function darkenColor(color, amount) {
-        const hex = color.replace('#', '');
-        const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - amount);
-        const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - amount);
-        const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - amount);
-        return `rgb(${r}, ${g}, ${b})`;
-    }
-
-    // ============================================
-    // INPUT HANDLING
-    // ============================================
-
-    // Keyboard
-    document.addEventListener('keydown', (e) => {
-        if (gameState === 'start' || gameState === 'gameover') {
-            if (e.code === 'Space' || e.key === ' ') {
-                e.preventDefault(); // stop browser scrolling on spacebar
-                startGame();
-            }
-            return;
-        }
-        // Prevent arrow keys from scrolling page during gameplay
-        if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
-            e.preventDefault();
-        }
-
-        if (gameState !== 'playing') return;
-
-        switch (e.code) {
-            case 'ArrowRight':
-            case 'KeyD':
-                pacman.nextDirection = 0;
-                break;
-            case 'ArrowDown':
-            case 'KeyS':
-                pacman.nextDirection = 1;
-                break;
-            case 'ArrowLeft':
-            case 'KeyA':
-                pacman.nextDirection = 2;
-                break;
-            case 'ArrowUp':
-            case 'KeyW':
-                pacman.nextDirection = 3;
-                break;
-        }
-    });
-
-    // Touch - swipe
-    document.addEventListener('touchstart', (e) => {
-        initAudio();
-
-        if (gameState === 'start' || gameState === 'gameover') {
-            startGame();
-            return;
-        }
-
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-    }, { passive: false });
-
-    document.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('touchend', (e) => {
-        if (gameState !== 'playing') return;
-
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-
-        const dx = touchEndX - touchStartX;
-        const dy = touchEndY - touchStartY;
-
-        const minSwipe = 30;
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            if (Math.abs(dx) > minSwipe) {
-                pacman.nextDirection = dx > 0 ? 0 : 2;
-            }
-        } else {
-            if (Math.abs(dy) > minSwipe) {
-                pacman.nextDirection = dy > 0 ? 1 : 3;
-            }
-        }
-    });
-
-    // D-pad buttons
-    document.getElementById('dpad-up').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        initAudio();
-        if (gameState === 'playing') pacman.nextDirection = 3;
-    });
-    document.getElementById('dpad-down').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        initAudio();
-        if (gameState === 'playing') pacman.nextDirection = 1;
-    });
-    document.getElementById('dpad-left').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        initAudio();
-        if (gameState === 'playing') pacman.nextDirection = 2;
-    });
-    document.getElementById('dpad-right').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        initAudio();
-        if (gameState === 'playing') pacman.nextDirection = 0;
-    });
-
-    // Mouse click to start
-    canvas.addEventListener('click', () => {
-        initAudio();
-        if (gameState === 'start' || gameState === 'gameover') {
-            startGame();
-        }
-    });
-
-    overlay.addEventListener('click', () => {
-        initAudio();
-        if (gameState === 'start' || gameState === 'gameover') {
-            startGame();
-        }
-    });
-
-    // Pause on blur
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden && gameState === 'playing') {
-            gameState = 'paused';
-        } else if (!document.hidden && gameState === 'paused') {
-            gameState = 'playing';
-        }
-    });
-
-    window.addEventListener('blur', () => {
-        if (gameState === 'playing') {
-            gameState = 'paused';
-        }
-    });
-
-    window.addEventListener('focus', () => {
-        if (gameState === 'paused') {
-            gameState = 'playing';
-        }
-    });
-
-    // Responsive scaling — use CSS width/height so canvas takes correct space in layout
-    function resize() {
-        const maxWidth = window.innerWidth - 20;
-        const maxHeight = window.innerHeight - 120; // leave room for HUD
-
-        const scale = Math.min(
-            maxWidth / canvas.width,
-            maxHeight / canvas.height,
-            1
-        );
-
-        const displayW = Math.floor(canvas.width * scale);
-        const displayH = Math.floor(canvas.height * scale);
-        canvas.style.width = displayW + 'px';
-        canvas.style.height = displayH + 'px';
-        canvas.style.transform = '';
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-
-    // Start
-    init();
-    </script>
+})();
+</script>
 </body>
 </html>
