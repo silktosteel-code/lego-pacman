@@ -32,16 +32,21 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 100%;
+            max-height: 100vh;
+            overflow: hidden;
         }
 
         #hud {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            padding: 10px 20px;
+            max-width: 560px;
+            padding: 8px 20px;
             color: #FFD700;
-            font-size: 14px;
+            font-size: 12px;
             text-shadow: 0 0 10px #FFD700;
+            box-sizing: border-box;
         }
 
         #hud > div {
@@ -1449,10 +1454,15 @@
     // Keyboard
     document.addEventListener('keydown', (e) => {
         if (gameState === 'start' || gameState === 'gameover') {
-            if (e.code === 'Space') {
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault(); // stop browser scrolling on spacebar
                 startGame();
             }
             return;
+        }
+        // Prevent arrow keys from scrolling page during gameplay
+        if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+            e.preventDefault();
         }
 
         if (gameState !== 'playing') return;
@@ -1574,20 +1584,22 @@
         }
     });
 
-    // Responsive scaling
+    // Responsive scaling — use CSS width/height so canvas takes correct space in layout
     function resize() {
-        const container = document.getElementById('gameContainer');
-        const maxWidth = window.innerWidth - 40;
-        const maxHeight = window.innerHeight - 150;
+        const maxWidth = window.innerWidth - 20;
+        const maxHeight = window.innerHeight - 120; // leave room for HUD
 
         const scale = Math.min(
             maxWidth / canvas.width,
             maxHeight / canvas.height,
-            1.5
+            1
         );
 
-        canvas.style.transform = `scale(${scale})`;
-        canvas.style.transformOrigin = 'top center';
+        const displayW = Math.floor(canvas.width * scale);
+        const displayH = Math.floor(canvas.height * scale);
+        canvas.style.width = displayW + 'px';
+        canvas.style.height = displayH + 'px';
+        canvas.style.transform = '';
     }
 
     window.addEventListener('resize', resize);
