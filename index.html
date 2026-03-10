@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lego Space Pac-Man</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background: #000011;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Press Start 2P', monospace;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 20px;
+            color: #FFD700;
+            font-size: 14px;
+            text-shadow: 0 0 10px #FFD700;
+        }
+
+        #hud > div {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #lives {
+            display: flex;
+            gap: 5px;
+        }
+
+        .life-icon {
+            width: 20px;
+            height: 20px;
+            background: #FFD700;
+            border-radius: 50%;
+            border: 2px solid #FFA500;
+        }
+
+        #gameCanvas {
+            border: 4px solid #003366;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 51, 102, 0.5), inset 0 0 50px rgba(0, 0, 0, 0.3);
+        }
+
+        #dpad {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 150px;
+        }
+
+        .dpad-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 51, 102, 0.8);
+            border: 3px solid #FFD700;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #FFD700;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .dpad-btn:active {
+            background: #FFD700;
+            color: #003366;
+            transform: scale(0.95);
+        }
+
+        #dpad-up { top: 0; left: 50px; }
+        #dpad-down { bottom: 0; left: 50px; }
+        #dpad-left { top: 50px; left: 0; }
+        #dpad-right { top: 50px; right: 0; }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 17, 0.9);
+            color: #FFD700;
+            text-align: center;
+            z-index: 10;
+        }
+
+        #overlay h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #FFD700;
+            animation: pulse 1.5s infinite;
+        }
+
+        #overlay p {
+            font-size: 12px;
+            margin: 10px 0;
+            color: #87CEEB;
+        }
+
+        #overlay .blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .hidden { display: none !important; }
+
+        #startShip {
+            width: 120px;
+            height: 80px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="hud">
+            <div>
+                <span>SCORE:</span>
+                <span id="score">0</span>
+            </div>
+            <div>
+                <span>LEVEL:</span>
+                <span id="level">1</span>
+            </div>
+            <div>
+                <span>HIGH:</span>
+                <span id="highScore">0</span>
+            </div>
+            <div id="lives"></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="overlay">
+            <h1>LEGO SPACE<br>PAC-MAN</h1>
+            <canvas id="startShip" width="120" height="80"></canvas>
+            <p>Classic Arcade Action in the Lego Galaxy!</p>
+            <p class="blink">PRESS SPACE OR TAP TO START</p>
+            <p style="font-size: 10px; margin-top: 30px;">Arrow Keys / WASD / Swipe to Move</p>
+        </div>
+    </div>
+    <div id="dpad">
+        <div class="dpad-btn" id="dpad-up">▲</div>
+        <div class="dpad-btn" id="dpad-down">▼</div>
+        <div class="dpad-btn" id="dpad-left">◀</div>
+        <div class="dpad-btn" id="dpad-right">▶</div>
+    </div>
+
+    <script>
+    // ============================================
+    // LEGO SPACE PAC-MAN - Complete Game
+    // ============================================
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const dpad = document.getElementById('dpad');
+    const scoreEl = document.getElementById('score');
+    const levelEl = document.getElementById('level');
+    const highScoreEl = document.getElementById('highScore');
+    const livesEl = document.getElementById('lives');
+
+    // Game constants
+    const TILE_SIZE = 20;
+    const MAZE_WIDTH = 28;
+    const MAZE_HEIGHT = 31;
+
+    // Colors - Lego Space palette
+    const COLORS = {
+        spaceBlue: '#003366',
+        spaceLightBlue: '#0066CC',
+        spaceDarkGrey: '#4A4A4A',
+        spaceLightGrey: '#8A8A8A',
+        yellow: '#FFD700',
+        white: '#FFFFFF',
+        black: '#000011',
+        ghostRed: '#FF0000',
+        ghostPink: '#FFB8FF',
+        ghostCyan: '#00FFFF',
+        ghostOrange: '#FFB852',
+        vulnerable: '#2121FF',
+        vulnerableWhite: '#DDDDDD'
+    };
+
+    // Classic Pac-Man maze (0=empty, 1=wall, 2=dot, 3=power pellet, 4=ghost house, 5=tunnel)
+    const MAZE_TEMPLATE = [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+        [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+        [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+        [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+        [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
+        [0,0,0,0,0,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,0,0,0,0,0],
+        [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+        [0,0,0,0,0,1,2,1,1,0,1,1,1,4,4,1,1,1,0,1,1,2,1,0,0,0,0,0],
+        [1,1,1,1,1,1,2,1,1,0,1,4,4,4,4,4,4,1,0,1,1,2,1,1,1,1,1,1],
+        [5,0,0,0,0,0,2,0,0,0,1,4,4,4,4,4,4,1,0,0,0,2,0,0,0,0,0,5],
+        [1,1,1,1,1,1,2,1,1,0,1,4,4,4,4,4,4,1,0,1,1,2,1,1,1,1,1,1],
+        [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+        [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+        [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+        [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+        [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+        [1,3,2,2,1,1,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,1,1,2,2,3,1],
+        [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+        [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+        [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+        [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+        [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+
+    // Game state
+    let gameState = 'start'; // start, playing, paused, gameover, levelcomplete
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('legoSpacePacmanHighScore')) || 0;
+    let lives = 3;
+    let level = 1;
+    let maze = [];
+    let dotsRemaining = 0;
+    let ghostEatChain = 0;
+    let powerMode = false;
+    let powerModeTimer = 0;
+    let fruitVisible = false;
+    let fruitTimer = 0;
+    let fruitEaten = 0;
+    let gameSpeed = 1;
+    let lastTime = 0;
+    let animFrame = 0;
+    let stars = [];
+
+    // Audio context
+    let audioCtx = null;
+
+    // Entities
+    let pacman = null;
+    let ghosts = [];
+
+    // Touch handling
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isTouchDevice = false;
+
+    // Fruit types (Lego Space themed)
+    const FRUIT_TYPES = ['rocket', 'moon', 'planet', 'ufo', 'astronaut'];
+    const FRUIT_POINTS = [100, 300, 500, 700, 1000];
+
+    // ============================================
+    // AUDIO SYSTEM
+    // ============================================
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+
+        switch(type) {
+            case 'wakka':
+                playWakka(now);
+                break;
+            case 'eatGhost':
+                playEatGhost(now);
+                break;
+            case 'death':
+                playDeath(now);
+                break;
+            case 'powerPellet':
+                playPowerPellet(now);
+                break;
+            case 'levelClear':
+                playLevelClear(now);
+                break;
+            case 'fruit':
+                playFruit(now);
+                break;
+        }
+    }
+
+    function playWakka(time) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400 + Math.random() * 100, time);
+        gain.gain.setValueAtTime(0.1, time);
+        gain.gain.exponentialDecayTo ? gain.gain.exponentialDecayTo(0.01, time + 0.05) : gain.gain.setValueAtTime(0.01, time + 0.05);
+        osc.start(time);
+        osc.stop(time + 0.06);
+    }
+
+    function playEatGhost(time) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, time);
+        osc.frequency.linearRampToValueAtTime(800, time + 0.2);
+        gain.gain.setValueAtTime(0.15, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.25);
+        osc.start(time);
+        osc.stop(time + 0.3);
+    }
+
+    function playDeath(time) {
+        for (let i = 0; i < 8; i++) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400 - i * 40, time + i * 0.1);
+            gain.gain.setValueAtTime(0.12, time + i * 0.1);
+            gain.gain.linearRampToValueAtTime(0.01, time + i * 0.1 + 0.1);
+            osc.start(time + i * 0.1);
+            osc.stop(time + i * 0.1 + 0.15);
+        }
+    }
+
+    function playPowerPellet(time) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, time);
+        osc.frequency.linearRampToValueAtTime(600, time + 0.15);
+        gain.gain.setValueAtTime(0.15, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.2);
+        osc.start(time);
+        osc.stop(time + 0.25);
+    }
+
+    function playLevelClear(time) {
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, time + i * 0.15);
+            gain.gain.setValueAtTime(0.12, time + i * 0.15);
+            gain.gain.linearRampToValueAtTime(0.01, time + i * 0.15 + 0.15);
+            osc.start(time + i * 0.15);
+            osc.stop(time + i * 0.15 + 0.2);
+        });
+    }
+
+    function playFruit(time) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, time);
+        osc.frequency.linearRampToValueAtTime(1200, time + 0.1);
+        gain.gain.setValueAtTime(0.15, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.15);
+        osc.start(time);
+        osc.stop(time + 0.2);
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+
+    function init() {
+        // Set canvas size
+        canvas.width = MAZE_WIDTH * TILE_SIZE;
+        canvas.height = MAZE_HEIGHT * TILE_SIZE;
+
+        // Generate stars
+        stars = [];
+        for (let i = 0; i < 100; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 0.5,
+                brightness: Math.random()
+            });
+        }
+
+        // Draw start screen ship
+        drawStartShip();
+
+        // Update high score display
+        highScoreEl.textContent = highScore;
+
+        // Check for touch device
+        isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            dpad.style.display = 'grid';
+        }
+
+        // Start render loop
+        requestAnimationFrame(gameLoop);
+    }
+
+    function drawStartShip() {
+        const shipCanvas = document.getElementById('startShip');
+        const shipCtx = shipCanvas.getContext('2d');
+
+        // Classic Lego Space ship
+        shipCtx.fillStyle = COLORS.yellow;
+        shipCtx.beginPath();
+        shipCtx.moveTo(60, 10);
+        shipCtx.lineTo(100, 40);
+        shipCtx.lineTo(100, 50);
+        shipCtx.lineTo(80, 60);
+        shipCtx.lineTo(40, 60);
+        shipCtx.lineTo(20, 50);
+        shipCtx.lineTo(20, 40);
+        shipCtx.closePath();
+        shipCtx.fill();
+
+        // Cockpit
+        shipCtx.fillStyle = '#00BFFF';
+        shipCtx.beginPath();
+        shipCtx.ellipse(60, 35, 15, 10, 0, 0, Math.PI * 2);
+        shipCtx.fill();
+
+        // Wings
+        shipCtx.fillStyle = COLORS.spaceBlue;
+        shipCtx.fillRect(10, 45, 30, 8);
+        shipCtx.fillRect(80, 45, 30, 8);
+
+        // Engine glow
+        shipCtx.fillStyle = '#FF6600';
+        shipCtx.beginPath();
+        shipCtx.moveTo(45, 60);
+        shipCtx.lineTo(50, 75);
+        shipCtx.lineTo(60, 70);
+        shipCtx.lineTo(70, 75);
+        shipCtx.lineTo(75, 60);
+        shipCtx.closePath();
+        shipCtx.fill();
+    }
+
+    function resetMaze() {
+        maze = MAZE_TEMPLATE.map(row => [...row]);
+        dotsRemaining = 0;
+
+        // Count dots
+        for (let y = 0; y < MAZE_HEIGHT; y++) {
+            for (let x = 0; x < MAZE_WIDTH; x++) {
+                if (maze[y][x] === 2 || maze[y][x] === 3) {
+                    dotsRemaining++;
+                }
+            }
+        }
+    }
+
+    function resetEntities() {
+        // Pac-Man starts below ghost house
+        pacman = {
+            x: 14,
+            y: 23,
+            direction: 0, // 0=right, 1=down, 2=left, 3=up
+            nextDirection: 0,
+            mouthOpen: true,
+            mouthAngle: 0,
+            moving: false,
+            moveProgress: 0
+        };
+
+        // Ghosts
+        ghosts = [
+            { name: 'blinky', color: COLORS.ghostRed, x: 14, y: 11, direction: 2, inHouse: false, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 25, scatterY: -3 },
+            { name: 'pinky', color: COLORS.ghostPink, x: 14, y: 14, direction: 0, inHouse: true, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 2, scatterY: -3 },
+            { name: 'inky', color: COLORS.ghostCyan, x: 12, y: 14, direction: 0, inHouse: true, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 27, scatterY: 34 },
+            { name: 'clyde', color: COLORS.ghostOrange, x: 16, y: 14, direction: 0, inHouse: true, targetX: 0, targetY: 0, mode: 'scatter', scatterX: 0, scatterY: 34 }
+        ];
+
+        ghosts.forEach(g => {
+            g.moveProgress = 0;
+            g.vulnerable = false;
+            g.eaten = false;
+            g.exitTimer = 0;
+        });
+
+        powerMode = false;
+        powerModeTimer = 0;
+        ghostEatChain = 0;
+    }
+
+    function startGame() {
+        initAudio();
+        gameState = 'playing';
+        score = 0;
+        lives = 3;
+        level = 1;
+        fruitEaten = 0;
+        gameSpeed = 1;
+
+        resetMaze();
+        resetEntities();
+        updateHUD();
+
+        overlay.classList.add('hidden');
+    }
+
+    function nextLevel() {
+        level++;
+        gameSpeed = 1 + (level - 1) * 0.1;
+        fruitEaten = 0;
+        fruitVisible = false;
+
+        resetMaze();
+        resetEntities();
+        updateHUD();
+
+        gameState = 'playing';
+    }
+
+    function loseLife() {
+        lives--;
+        updateHUD();
+
+        if (lives <= 0) {
+            gameOver();
+        } else {
+            resetEntities();
+        }
+    }
+
+    function gameOver() {
+        gameState = 'gameover';
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('legoSpacePacmanHighScore', highScore);
+            highScoreEl.textContent = highScore;
+        }
+
+        overlay.innerHTML = `
+            <h1>GAME OVER</h1>
+            <p>Final Score: ${score}</p>
+            <p>Level Reached: ${level}</p>
+            <p class="blink" style="margin-top: 30px;">PRESS SPACE OR TAP TO RESTART</p>
+        `;
+        overlay.classList.remove('hidden');
+    }
+
+    function levelComplete() {
+        gameState = 'levelcomplete';
+        playSound('levelClear');
+
+        setTimeout(() => {
+            nextLevel();
+        }, 2000);
+    }
+
+    function updateHUD() {
+        scoreEl.textContent = score;
+        levelEl.textContent = level;
+
+        livesEl.innerHTML = '';
+        for (let i = 0; i < lives; i++) {
+            const life = document.createElement('div');
+            life.className = 'life-icon';
+            livesEl.appendChild(life);
+        }
+    }
+
+    // ============================================
+    // GAME LOOP
+    // ============================================
+
+    function gameLoop(timestamp) {
+        const deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
+
+        animFrame++;
+
+        if (gameState === 'playing') {
+            update(deltaTime);
+        }
+
+        render();
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update(deltaTime) {
+        const speed = 0.1 * gameSpeed;
+
+        // Update Pac-Man
+        updatePacman(speed);
+
+        // Update ghosts
+        updateGhosts(speed);
+
+        // Update power mode
+        if (powerMode) {
+            powerModeTimer -= deltaTime;
+            if (powerModeTimer <= 0) {
+                powerMode = false;
+                ghosts.forEach(g => {
+                    g.vulnerable = false;
+                });
+            }
+        }
+
+        // Update fruit
+        if (!fruitVisible && fruitEaten < 2) {
+            const dotsEaten = countInitialDots() - dotsRemaining;
+            if ((dotsEaten === 70 || dotsEaten === 170) && fruitEaten < 2) {
+                fruitVisible = true;
+                fruitTimer = 10000; // 10 seconds
+            }
+        }
+
+        if (fruitVisible) {
+            fruitTimer -= deltaTime;
+            if (fruitTimer <= 0) {
+                fruitVisible = false;
+            }
+        }
+
+        // Check collisions
+        checkCollisions();
+
+        // Check level complete
+        if (dotsRemaining === 0) {
+            levelComplete();
+        }
+    }
+
+    function countInitialDots() {
+        let count = 0;
+        for (let y = 0; y < MAZE_HEIGHT; y++) {
+            for (let x = 0; x < MAZE_WIDTH; x++) {
+                if (MAZE_TEMPLATE[y][x] === 2 || MAZE_TEMPLATE[y][x] === 3) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    function updatePacman(speed) {
+        // Try to change direction
+        if (pacman.nextDirection !== pacman.direction) {
+            if (canMove(pacman.x, pacman.y, pacman.nextDirection)) {
+                pacman.direction = pacman.nextDirection;
+            }
+        }
+
+        // Move
+        if (canMove(pacman.x, pacman.y, pacman.direction)) {
+            pacman.moving = true;
+            pacman.moveProgress += speed;
+
+            if (pacman.moveProgress >= 1) {
+                pacman.moveProgress = 0;
+
+                // Actually move
+                const dx = [1, 0, -1, 0][pacman.direction];
+                const dy = [0, 1, 0, -1][pacman.direction];
+                pacman.x += dx;
+                pacman.y += dy;
+
+                // Tunnel wrap
+                if (pacman.x < 0) pacman.x = MAZE_WIDTH - 1;
+                if (pacman.x >= MAZE_WIDTH) pacman.x = 0;
+
+                // Eat dots
+                const tile = maze[pacman.y][pacman.x];
+                if (tile === 2) {
+                    maze[pacman.y][pacman.x] = 0;
+                    score += 10;
+                    dotsRemaining--;
+                    playSound('wakka');
+                    updateHUD();
+                } else if (tile === 3) {
+                    maze[pacman.y][pacman.x] = 0;
+                    score += 50;
+                    dotsRemaining--;
+                    activatePowerMode();
+                    playSound('powerPellet');
+                    updateHUD();
+                }
+            }
+        } else {
+            pacman.moving = false;
+        }
+
+        // Animate mouth
+        if (pacman.moving) {
+            pacman.mouthAngle = Math.abs(Math.sin(animFrame * 0.3)) * 0.5;
+        }
+    }
+
+    function activatePowerMode() {
+        powerMode = true;
+        powerModeTimer = 8000 - level * 500; // Gets shorter each level
+        if (powerModeTimer < 3000) powerModeTimer = 3000;
+
+        ghostEatChain = 0;
+
+        ghosts.forEach(g => {
+            if (!g.eaten) {
+                g.vulnerable = true;
+                // Reverse direction
+                g.direction = (g.direction + 2) % 4;
+            }
+        });
+    }
+
+    function updateGhosts(speed) {
+        const ghostSpeed = speed * 0.9;
+        const vulnerableSpeed = speed * 0.5;
+        const eatenSpeed = speed * 2;
+
+        ghosts.forEach((ghost, index) => {
+            // Handle ghost house exit
+            if (ghost.inHouse) {
+                ghost.exitTimer += 16; // roughly 16ms per frame
+                const exitDelay = [0, 2000, 4000, 6000][index];
+
+                if (ghost.exitTimer >= exitDelay) {
+                    ghost.inHouse = false;
+                    ghost.x = 14;
+                    ghost.y = 11;
+                }
+                return;
+            }
+
+            // Determine speed
+            let currentSpeed = ghostSpeed;
+            if (ghost.vulnerable) currentSpeed = vulnerableSpeed;
+            if (ghost.eaten) currentSpeed = eatenSpeed;
+
+            ghost.moveProgress += currentSpeed;
+
+            if (ghost.moveProgress >= 1) {
+                ghost.moveProgress = 0;
+
+                // Move ghost
+                const dx = [1, 0, -1, 0][ghost.direction];
+                const dy = [0, 1, 0, -1][ghost.direction];
+                ghost.x += dx;
+                ghost.y += dy;
+
+                // Tunnel wrap
+                if (ghost.x < 0) ghost.x = MAZE_WIDTH - 1;
+                if (ghost.x >= MAZE_WIDTH) ghost.x = 0;
+
+                // Check if returned to ghost house after being eaten
+                if (ghost.eaten && ghost.x >= 12 && ghost.x <= 16 && ghost.y >= 13 && ghost.y <= 15) {
+                    ghost.eaten = false;
+                    ghost.vulnerable = false;
+                }
+
+                // Choose new direction
+                chooseGhostDirection(ghost);
+            }
+        });
+    }
+
+    function chooseGhostDirection(ghost) {
+        // Calculate target
+        if (ghost.eaten) {
+            // Return to ghost house
+            ghost.targetX = 14;
+            ghost.targetY = 14;
+        } else if (ghost.vulnerable) {
+            // Run away (random-ish)
+            ghost.targetX = Math.floor(Math.random() * MAZE_WIDTH);
+            ghost.targetY = Math.floor(Math.random() * MAZE_HEIGHT);
+        } else if (ghost.mode === 'scatter') {
+            ghost.targetX = ghost.scatterX;
+            ghost.targetY = ghost.scatterY;
+        } else {
+            // Chase mode - different for each ghost
+            switch (ghost.name) {
+                case 'blinky':
+                    // Targets Pac-Man directly
+                    ghost.targetX = pacman.x;
+                    ghost.targetY = pacman.y;
+                    break;
+                case 'pinky':
+                    // Targets 4 tiles ahead of Pac-Man
+                    const dx = [4, 0, -4, 0][pacman.direction];
+                    const dy = [0, 4, 0, -4][pacman.direction];
+                    ghost.targetX = pacman.x + dx;
+                    ghost.targetY = pacman.y + dy;
+                    break;
+                case 'inky':
+                    // Complex targeting based on Blinky
+                    const blinky = ghosts[0];
+                    const aheadX = pacman.x + [2, 0, -2, 0][pacman.direction];
+                    const aheadY = pacman.y + [0, 2, 0, -2][pacman.direction];
+                    ghost.targetX = aheadX * 2 - blinky.x;
+                    ghost.targetY = aheadY * 2 - blinky.y;
+                    break;
+                case 'clyde':
+                    // Chases when far, scatters when close
+                    const dist = Math.sqrt(Math.pow(ghost.x - pacman.x, 2) + Math.pow(ghost.y - pacman.y, 2));
+                    if (dist > 8) {
+                        ghost.targetX = pacman.x;
+                        ghost.targetY = pacman.y;
+                    } else {
+                        ghost.targetX = ghost.scatterX;
+                        ghost.targetY = ghost.scatterY;
+                    }
+                    break;
+            }
+        }
+
+        // Find best direction
+        const directions = [0, 1, 2, 3]; // right, down, left, up
+        const opposite = (ghost.direction + 2) % 4;
+
+        let bestDir = ghost.direction;
+        let bestDist = Infinity;
+
+        directions.forEach(dir => {
+            // Can't reverse
+            if (dir === opposite) return;
+
+            const nx = ghost.x + [1, 0, -1, 0][dir];
+            const ny = ghost.y + [0, 1, 0, -1][dir];
+
+            // Check if can move
+            if (!isWalkable(nx, ny, true)) return;
+
+            const dist = Math.pow(nx - ghost.targetX, 2) + Math.pow(ny - ghost.targetY, 2);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestDir = dir;
+            }
+        });
+
+        ghost.direction = bestDir;
+
+        // Occasionally switch modes
+        if (Math.random() < 0.001) {
+            ghost.mode = ghost.mode === 'scatter' ? 'chase' : 'scatter';
+        }
+
+        // In later levels, chase more
+        if (level > 1 && ghost.mode === 'scatter' && Math.random() < 0.01 * level) {
+            ghost.mode = 'chase';
+        }
+    }
+
+    function canMove(x, y, direction) {
+        const dx = [1, 0, -1, 0][direction];
+        const dy = [0, 1, 0, -1][direction];
+        const nx = x + dx;
+        const ny = y + dy;
+
+        // Tunnel
+        if (nx < 0 || nx >= MAZE_WIDTH) return true;
+
+        return isWalkable(nx, ny, false);
+    }
+
+    function isWalkable(x, y, isGhost) {
+        if (x < 0 || x >= MAZE_WIDTH) return true; // tunnel
+        if (y < 0 || y >= MAZE_HEIGHT) return false;
+
+        const tile = maze[y][x];
+        if (tile === 1) return false; // wall
+        if (tile === 4 && !isGhost) return false; // ghost house
+
+        return true;
+    }
+
+    function checkCollisions() {
+        // Fruit collision
+        if (fruitVisible) {
+            const fruitX = 14;
+            const fruitY = 17;
+
+            if (pacman.x === fruitX && pacman.y === fruitY) {
+                fruitVisible = false;
+                fruitEaten++;
+                const fruitIndex = Math.min(level - 1, FRUIT_TYPES.length - 1);
+                score += FRUIT_POINTS[fruitIndex];
+                playSound('fruit');
+                updateHUD();
+            }
+        }
+
+        // Ghost collision
+        ghosts.forEach(ghost => {
+            if (ghost.inHouse || ghost.eaten) return;
+
+            const dx = Math.abs(ghost.x - pacman.x);
+            const dy = Math.abs(ghost.y - pacman.y);
+
+            if (dx < 0.8 && dy < 0.8) {
+                if (ghost.vulnerable) {
+                    // Eat ghost
+                    ghost.eaten = true;
+                    ghostEatChain++;
+                    const points = 200 * Math.pow(2, ghostEatChain - 1);
+                    score += points;
+                    playSound('eatGhost');
+                    updateHUD();
+                } else {
+                    // Pac-Man dies
+                    playSound('death');
+                    loseLife();
+                }
+            }
+        });
+    }
+
+    // ============================================
+    // RENDERING
+    // ============================================
+
+    function render() {
+        // Clear
+        ctx.fillStyle = COLORS.black;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw stars
+        drawStars();
+
+        // Draw maze
+        drawMaze();
+
+        // Draw fruit
+        if (fruitVisible) {
+            drawFruit(14, 17);
+        }
+
+        // Draw ghosts
+        ghosts.forEach(ghost => {
+            if (!ghost.inHouse || gameState !== 'playing') {
+                drawGhost(ghost);
+            }
+        });
+
+        // Draw Pac-Man
+        if (gameState === 'playing' || gameState === 'start') {
+            drawPacman();
+        }
+
+        // Draw level complete flash
+        if (gameState === 'levelcomplete') {
+            if (Math.floor(animFrame / 10) % 2 === 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+    }
+
+    function drawStars() {
+        stars.forEach(star => {
+            const brightness = 0.3 + star.brightness * 0.7 * (0.5 + 0.5 * Math.sin(animFrame * 0.02 + star.x));
+            ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    function drawMaze() {
+        for (let y = 0; y < MAZE_HEIGHT; y++) {
+            for (let x = 0; x < MAZE_WIDTH; x++) {
+                const tile = maze[y][x];
+                const px = x * TILE_SIZE;
+                const py = y * TILE_SIZE;
+
+                if (tile === 1) {
+                    drawLegoBrick(px, py, TILE_SIZE, TILE_SIZE);
+                } else if (tile === 2) {
+                    drawDot(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 3);
+                } else if (tile === 3) {
+                    drawPowerPellet(px + TILE_SIZE / 2, py + TILE_SIZE / 2);
+                }
+            }
+        }
+    }
+
+    function drawLegoBrick(x, y, w, h) {
+        // Main brick
+        ctx.fillStyle = COLORS.spaceBlue;
+        ctx.fillRect(x, y, w, h);
+
+        // Lighter top edge
+        ctx.fillStyle = COLORS.spaceLightBlue;
+        ctx.fillRect(x, y, w, 2);
+        ctx.fillRect(x, y, 2, h);
+
+        // Darker bottom edge
+        ctx.fillStyle = '#001a33';
+        ctx.fillRect(x, y + h - 2, w, 2);
+        ctx.fillRect(x + w - 2, y, 2, h);
+
+        // Stud on top
+        const studSize = 6;
+        const studX = x + w / 2;
+        const studY = y + h / 2;
+
+        // Stud shadow
+        ctx.fillStyle = '#001a33';
+        ctx.beginPath();
+        ctx.arc(studX + 1, studY + 1, studSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main stud
+        ctx.fillStyle = COLORS.spaceBlue;
+        ctx.beginPath();
+        ctx.arc(studX, studY, studSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stud highlight
+        ctx.fillStyle = COLORS.spaceLightBlue;
+        ctx.beginPath();
+        ctx.arc(studX - 1, studY - 1, studSize / 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawDot(x, y, radius) {
+        // Small Lego stud (dot)
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(x + 1, y + 1, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = COLORS.yellow;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight
+        ctx.fillStyle = '#FFFF99';
+        ctx.beginPath();
+        ctx.arc(x - 1, y - 1, radius / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawPowerPellet(x, y) {
+        const radius = 7;
+        const pulse = Math.sin(animFrame * 0.1) * 0.3 + 0.7;
+
+        // Glow
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2);
+        glow.addColorStop(0, `rgba(255, 215, 0, ${pulse * 0.5})`);
+        glow.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main pellet (2x2 round plate)
+        ctx.fillStyle = COLORS.yellow;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner circle (Lego round plate detail)
+        ctx.fillStyle = '#FFC500';
+        ctx.beginPath();
+        ctx.arc(x, y, radius - 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight
+        ctx.fillStyle = '#FFFF99';
+        ctx.beginPath();
+        ctx.arc(x - 2, y - 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawPacman() {
+        const x = (pacman.x + 0.5) * TILE_SIZE + pacman.moveProgress * [1, 0, -1, 0][pacman.direction] * TILE_SIZE;
+        const y = (pacman.y + 0.5) * TILE_SIZE + pacman.moveProgress * [0, 1, 0, -1][pacman.direction] * TILE_SIZE;
+        const radius = TILE_SIZE * 0.8;
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Rotate based on direction
+        const rotations = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+        ctx.rotate(rotations[pacman.direction]);
+
+        // Draw as Lego astronaut helmet / classic spaceship
+
+        // Main yellow body (helmet shape)
+        ctx.fillStyle = COLORS.yellow;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, pacman.mouthAngle, Math.PI * 2 - pacman.mouthAngle);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Helmet shine
+        ctx.fillStyle = '#FFEE88';
+        ctx.beginPath();
+        ctx.arc(-3, -5, radius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Visor (blue transparent)
+        ctx.fillStyle = 'rgba(0, 191, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(2, 0, radius * 0.5, -0.5, 0.5);
+        ctx.arc(2, 0, radius * 0.3, 0.5, -0.5, true);
+        ctx.closePath();
+        ctx.fill();
+
+        // Lego stud on top
+        ctx.fillStyle = '#FFC500';
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.4, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFEE88';
+        ctx.beginPath();
+        ctx.arc(-1, -radius * 0.4 - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawGhost(ghost) {
+        const x = (ghost.x + 0.5) * TILE_SIZE + ghost.moveProgress * [1, 0, -1, 0][ghost.direction] * TILE_SIZE;
+        const y = (ghost.y + 0.5) * TILE_SIZE + ghost.moveProgress * [0, 1, 0, -1][ghost.direction] * TILE_SIZE;
+        const w = TILE_SIZE * 1.6;
+        const h = TILE_SIZE * 1.8;
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Determine color
+        let bodyColor = ghost.color;
+        let isFlashing = false;
+
+        if (ghost.eaten) {
+            // Just eyes going home
+            drawGhostEyes(0, -2, ghost.direction, true);
+            ctx.restore();
+            return;
+        }
+
+        if (ghost.vulnerable) {
+            if (powerModeTimer < 2000 && Math.floor(animFrame / 8) % 2 === 0) {
+                bodyColor = COLORS.vulnerableWhite;
+                isFlashing = true;
+            } else {
+                bodyColor = COLORS.vulnerable;
+            }
+        }
+
+        // Lego alien minifig body
+
+        // Head (rounded rectangle)
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h * 0.7, 5);
+        ctx.fill();
+
+        // Antenna
+        ctx.fillStyle = bodyColor;
+        ctx.fillRect(-2, -h / 2 - 8, 4, 8);
+        ctx.beginPath();
+        ctx.arc(0, -h / 2 - 10, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Little Lego legs
+        const legY = h * 0.2;
+        const legWobble = Math.sin(animFrame * 0.3) * 2;
+
+        ctx.fillStyle = bodyColor;
+        ctx.fillRect(-w / 3 - 3, legY, 6, 8 + legWobble);
+        ctx.fillRect(w / 3 - 3, legY, 6, 8 - legWobble);
+
+        // Feet (small rectangles)
+        ctx.fillRect(-w / 3 - 5, legY + 6 + legWobble, 10, 4);
+        ctx.fillRect(w / 3 - 5, legY + 6 - legWobble, 10, 4);
+
+        // Face
+        if (ghost.vulnerable) {
+            // Scared face
+            drawGhostScaredFace(0, -2, isFlashing);
+        } else {
+            // Normal alien eyes
+            drawGhostEyes(0, -2, ghost.direction, false);
+        }
+
+        // Lego stud on head
+        ctx.fillStyle = ghost.vulnerable ? '#1919AA' : darkenColor(bodyColor, 20);
+        ctx.beginPath();
+        ctx.arc(0, -h / 2 + 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawGhostEyes(x, y, direction, eyesOnly) {
+        // Big alien eyes
+        const eyeOffsets = [[2, 0], [0, 2], [-2, 0], [0, -2]][direction];
+
+        // Left eye
+        ctx.fillStyle = COLORS.white;
+        ctx.beginPath();
+        ctx.ellipse(x - 5, y, 5, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Right eye
+        ctx.beginPath();
+        ctx.ellipse(x + 5, y, 5, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pupils
+        ctx.fillStyle = '#0066FF';
+        ctx.beginPath();
+        ctx.arc(x - 5 + eyeOffsets[0], y + eyeOffsets[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 5 + eyeOffsets[0], y + eyeOffsets[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner pupils
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x - 5 + eyeOffsets[0], y + eyeOffsets[1], 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 5 + eyeOffsets[0], y + eyeOffsets[1], 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawGhostScaredFace(x, y, isWhite) {
+        // X eyes
+        ctx.strokeStyle = isWhite ? '#333' : COLORS.white;
+        ctx.lineWidth = 2;
+
+        // Left X
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y - 4);
+        ctx.lineTo(x - 2, y + 2);
+        ctx.moveTo(x - 2, y - 4);
+        ctx.lineTo(x - 8, y + 2);
+        ctx.stroke();
+
+        // Right X
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y - 4);
+        ctx.lineTo(x + 8, y + 2);
+        ctx.moveTo(x + 8, y - 4);
+        ctx.lineTo(x + 2, y + 2);
+        ctx.stroke();
+
+        // Wavy mouth
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y + 8);
+        for (let i = 0; i < 4; i++) {
+            ctx.quadraticCurveTo(x - 6 + i * 4, y + 6 + (i % 2) * 4, x - 4 + i * 4, y + 8);
+        }
+        ctx.stroke();
+    }
+
+    function drawFruit(tileX, tileY) {
+        const x = (tileX + 0.5) * TILE_SIZE;
+        const y = (tileY + 0.5) * TILE_SIZE;
+        const fruitIndex = Math.min(level - 1, FRUIT_TYPES.length - 1);
+        const fruitType = FRUIT_TYPES[fruitIndex];
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Bobbing animation
+        ctx.translate(0, Math.sin(animFrame * 0.1) * 2);
+
+        switch (fruitType) {
+            case 'rocket':
+                // Lego rocket
+                ctx.fillStyle = '#FF4444';
+                ctx.beginPath();
+                ctx.moveTo(0, -12);
+                ctx.lineTo(6, 0);
+                ctx.lineTo(6, 8);
+                ctx.lineTo(-6, 8);
+                ctx.lineTo(-6, 0);
+                ctx.closePath();
+                ctx.fill();
+                // Fins
+                ctx.fillStyle = '#FFFF00';
+                ctx.fillRect(-10, 4, 4, 6);
+                ctx.fillRect(6, 4, 4, 6);
+                // Window
+                ctx.fillStyle = '#00BFFF';
+                ctx.beginPath();
+                ctx.arc(0, -2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // Flame
+                ctx.fillStyle = '#FF8800';
+                ctx.beginPath();
+                ctx.moveTo(-4, 8);
+                ctx.lineTo(0, 14);
+                ctx.lineTo(4, 8);
+                ctx.closePath();
+                ctx.fill();
+                break;
+
+            case 'moon':
+                // Lego moon
+                ctx.fillStyle = '#DDDDAA';
+                ctx.beginPath();
+                ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                ctx.fill();
+                // Craters
+                ctx.fillStyle = '#AAAAAA';
+                ctx.beginPath();
+                ctx.arc(-4, -2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(3, 4, 2, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+
+            case 'planet':
+                // Ringed planet
+                ctx.fillStyle = '#FF6633';
+                ctx.beginPath();
+                ctx.arc(0, 0, 8, 0, Math.PI * 2);
+                ctx.fill();
+                // Ring
+                ctx.strokeStyle = '#FFCC66';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 14, 4, Math.PI * 0.2, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+
+            case 'ufo':
+                // Classic UFO
+                ctx.fillStyle = '#888888';
+                ctx.beginPath();
+                ctx.ellipse(0, 2, 12, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Dome
+                ctx.fillStyle = '#00FFFF';
+                ctx.beginPath();
+                ctx.arc(0, -2, 6, Math.PI, 0);
+                ctx.fill();
+                // Lights
+                ctx.fillStyle = '#FFFF00';
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.arc(-6 + i * 6, 4, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                break;
+
+            case 'astronaut':
+                // Lego astronaut minifig
+                ctx.fillStyle = COLORS.white;
+                // Helmet
+                ctx.beginPath();
+                ctx.arc(0, -4, 7, 0, Math.PI * 2);
+                ctx.fill();
+                // Visor
+                ctx.fillStyle = '#00BFFF';
+                ctx.fillRect(-4, -6, 8, 5);
+                // Body
+                ctx.fillStyle = COLORS.white;
+                ctx.fillRect(-5, 3, 10, 8);
+                // Backpack
+                ctx.fillStyle = '#888888';
+                ctx.fillRect(-7, 3, 2, 8);
+                ctx.fillRect(5, 3, 2, 8);
+                break;
+        }
+
+        ctx.restore();
+    }
+
+    function darkenColor(color, amount) {
+        const hex = color.replace('#', '');
+        const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - amount);
+        const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - amount);
+        const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - amount);
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // ============================================
+    // INPUT HANDLING
+    // ============================================
+
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+        if (gameState === 'start' || gameState === 'gameover') {
+            if (e.code === 'Space') {
+                startGame();
+            }
+            return;
+        }
+
+        if (gameState !== 'playing') return;
+
+        switch (e.code) {
+            case 'ArrowRight':
+            case 'KeyD':
+                pacman.nextDirection = 0;
+                break;
+            case 'ArrowDown':
+            case 'KeyS':
+                pacman.nextDirection = 1;
+                break;
+            case 'ArrowLeft':
+            case 'KeyA':
+                pacman.nextDirection = 2;
+                break;
+            case 'ArrowUp':
+            case 'KeyW':
+                pacman.nextDirection = 3;
+                break;
+        }
+    });
+
+    // Touch - swipe
+    document.addEventListener('touchstart', (e) => {
+        initAudio();
+
+        if (gameState === 'start' || gameState === 'gameover') {
+            startGame();
+            return;
+        }
+
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+        if (gameState !== 'playing') return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+
+        const minSwipe = 30;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (Math.abs(dx) > minSwipe) {
+                pacman.nextDirection = dx > 0 ? 0 : 2;
+            }
+        } else {
+            if (Math.abs(dy) > minSwipe) {
+                pacman.nextDirection = dy > 0 ? 1 : 3;
+            }
+        }
+    });
+
+    // D-pad buttons
+    document.getElementById('dpad-up').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        initAudio();
+        if (gameState === 'playing') pacman.nextDirection = 3;
+    });
+    document.getElementById('dpad-down').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        initAudio();
+        if (gameState === 'playing') pacman.nextDirection = 1;
+    });
+    document.getElementById('dpad-left').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        initAudio();
+        if (gameState === 'playing') pacman.nextDirection = 2;
+    });
+    document.getElementById('dpad-right').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        initAudio();
+        if (gameState === 'playing') pacman.nextDirection = 0;
+    });
+
+    // Mouse click to start
+    canvas.addEventListener('click', () => {
+        initAudio();
+        if (gameState === 'start' || gameState === 'gameover') {
+            startGame();
+        }
+    });
+
+    overlay.addEventListener('click', () => {
+        initAudio();
+        if (gameState === 'start' || gameState === 'gameover') {
+            startGame();
+        }
+    });
+
+    // Pause on blur
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && gameState === 'playing') {
+            gameState = 'paused';
+        } else if (!document.hidden && gameState === 'paused') {
+            gameState = 'playing';
+        }
+    });
+
+    window.addEventListener('blur', () => {
+        if (gameState === 'playing') {
+            gameState = 'paused';
+        }
+    });
+
+    window.addEventListener('focus', () => {
+        if (gameState === 'paused') {
+            gameState = 'playing';
+        }
+    });
+
+    // Responsive scaling
+    function resize() {
+        const container = document.getElementById('gameContainer');
+        const maxWidth = window.innerWidth - 40;
+        const maxHeight = window.innerHeight - 150;
+
+        const scale = Math.min(
+            maxWidth / canvas.width,
+            maxHeight / canvas.height,
+            1.5
+        );
+
+        canvas.style.transform = `scale(${scale})`;
+        canvas.style.transformOrigin = 'top center';
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Start
+    init();
+    </script>
+</body>
+</html>
